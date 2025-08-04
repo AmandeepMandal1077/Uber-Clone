@@ -13,7 +13,7 @@ import {
 const router = express.Router();
 
 router.post(
-  "/register-user",
+  "/register",
   [
     body("email").isEmail().withMessage("Invalid Email"),
     body("fullname.firstname")

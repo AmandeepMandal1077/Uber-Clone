@@ -16,6 +16,11 @@ const registerUser = async (req, res, next) => {
     password,
   } = req.body;
 
+  const isAlreadyRegistered = await USER.findOne({ email });
+  if (isAlreadyRegistered) {
+    return res.status(400).json({ message: "User already registered" });
+  }
+
   const hashedPassword = await USER.hashPassword(password);
 
   const user = await createUser({
