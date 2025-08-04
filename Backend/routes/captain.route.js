@@ -2,7 +2,7 @@ import express from "express";
 import { Router } from "express";
 import { body } from "express-validator";
 import {
-  registreCaptain,
+  registerCaptain,
   loginCaptain,
   logoutCaptain,
   getCaptainProfile,
@@ -38,7 +38,7 @@ router.post(
     body("vehicle.number").notEmpty().withMessage("Vehicle number is required"),
   ],
 
-  registreCaptain
+  registerCaptain
 );
 
 router.post(

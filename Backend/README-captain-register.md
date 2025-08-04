@@ -3,7 +3,7 @@
 ## Base URL
 
 ```
-http://localhost:8000/captain
+http://localhost:8000/captains
 ```
 
 ## Authentication
@@ -163,7 +163,7 @@ Protected endpoints require a JWT token provided via:
 ### Register Captain
 
 ```bash
-curl -X POST http://localhost:8000/captain/register \
+curl -X POST http://localhost:8000/captains/register \
   -H "Content-Type: application/json" \
   -d '{"fullname":{"firstname":"John","lastname":"Doe"},"email":"john@example.com","password":"password123","vehicle":{"type":"Sedan","color":"Black","capacity":4,"number":"ABC1234"}}'
 ```
@@ -171,7 +171,7 @@ curl -X POST http://localhost:8000/captain/register \
 ### Login
 
 ```bash
-curl -X POST http://localhost:8000/captain/login \
+curl -X POST http://localhost:8000/captains/login \
   -H "Content-Type: application/json" \
   -d '{"email":"john@example.com","password":"password123"}'
 ```
@@ -179,14 +179,14 @@ curl -X POST http://localhost:8000/captain/login \
 ### Get Profile
 
 ```bash
-curl -X GET http://localhost:8000/captain/profile \
+curl -X GET http://localhost:8000/captains/profile \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
 ### Logout
 
 ```bash
-curl -X POST http://localhost:8000/captain/logout \
+curl -X POST http://localhost:8000/captains/logout \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 

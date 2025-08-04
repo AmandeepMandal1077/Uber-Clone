@@ -3,7 +3,7 @@ import BlackListToken from "../models/blacklistToken.model.js";
 import { validationResult } from "express-validator";
 import { createCaptain } from "../services/captain.service.js";
 
-const registreCaptain = async (req, res, next) => {
+const registerCaptain = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -73,4 +73,4 @@ const getCaptainProfile = async (req, res, next) => {
   res.status(200).json({ captain: req.captain });
 };
 
-export { registreCaptain, loginCaptain, logoutCaptain, getCaptainProfile };
+export { registerCaptain, loginCaptain, logoutCaptain, getCaptainProfile };
