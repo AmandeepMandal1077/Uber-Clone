@@ -1,7 +1,12 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { UserContext } from "../context/UserContext.jsx";
+import axios from "axios";
 
 function UserLogin() {
+  const navigate = useNavigate();
+  const { user, setUser } = useContext(UserContext);
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -14,10 +19,26 @@ function UserLogin() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     // Handle login logic here
-    console.log("User login:", formData);
+    // console.log("User login:", formData);
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASE_URL}/users/login`,
+      formData
+    );
+
+    console.log("Response from login:", response);
+    if (response.status === 200) {
+      setFormData({
+        email: "",
+        password: "",
+      });
+      setUser(response.data.user);
+      localStorage.setItem("token", response.data.token);
+      console.log("User logged in successfully:", response.data.user);
+      navigate("/dashboard");
+    }
   };
 
   return (

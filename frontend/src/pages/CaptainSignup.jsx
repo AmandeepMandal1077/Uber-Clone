@@ -1,29 +1,66 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { CaptainContext } from "../context/CaptainContext";
+import axios from "axios";
 
 function CaptainSignup() {
   const [formData, setFormData] = useState({
-    firstname: "",
-    lastname: "",
+    fullname: {
+      firstname: "",
+      lastname: "",
+    },
     email: "",
     password: "",
-    vehicleType: "",
-    vehicleColor: "",
-    vehicleCapacity: "",
-    vehicleNumber: "",
+    vehicle: {
+      color: "",
+      plate: "",
+      capacity: "",
+      vehicleType: "",
+    },
   });
 
+  const { setCaptain } = useContext(CaptainContext);
+  const navigate = useNavigate();
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".");
+      setFormData((prev) => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value,
+        },
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle captain signup logic here
-    console.log("Captain signup:", formData);
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/captain/register`,
+        formData
+      );
+
+      if (response.status === 201) {
+        const data = response.data;
+        setCaptain(data.captain);
+        localStorage.setItem("token", data.token);
+        navigate("/captain-dashboard");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      // Handle error (show message, etc.)
+    }
   };
 
   return (
@@ -67,8 +104,8 @@ function CaptainSignup() {
                     </label>
                     <input
                       type="text"
-                      name="firstname"
-                      value={formData.firstname}
+                      name="fullname.firstname"
+                      value={formData.fullname.firstname}
                       onChange={handleChange}
                       required
                       className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"
@@ -81,8 +118,8 @@ function CaptainSignup() {
                     </label>
                     <input
                       type="text"
-                      name="lastname"
-                      value={formData.lastname}
+                      name="fullname.lastname"
+                      value={formData.fullname.lastname}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"
                       placeholder="Last name"
@@ -132,8 +169,8 @@ function CaptainSignup() {
                       Vehicle Type
                     </label>
                     <select
-                      name="vehicleType"
-                      value={formData.vehicleType}
+                      name="vehicle.vehicleType"
+                      value={formData.vehicle.vehicleType}
                       onChange={handleChange}
                       required
                       className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"
@@ -141,7 +178,7 @@ function CaptainSignup() {
                       <option value="">Select type</option>
                       <option value="car">Car</option>
                       <option value="bike">Bike</option>
-                      <option value="auto">Auto</option>
+                      <option value="auto">Rickshaw</option>
                     </select>
                   </div>
                   <div>
@@ -150,8 +187,8 @@ function CaptainSignup() {
                     </label>
                     <input
                       type="text"
-                      name="vehicleColor"
-                      value={formData.vehicleColor}
+                      name="vehicle.color"
+                      value={formData.vehicle.color}
                       onChange={handleChange}
                       required
                       className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"
@@ -167,8 +204,8 @@ function CaptainSignup() {
                     </label>
                     <input
                       type="number"
-                      name="vehicleCapacity"
-                      value={formData.vehicleCapacity}
+                      name="vehicle.capacity"
+                      value={formData.vehicle.capacity}
                       onChange={handleChange}
                       required
                       min="1"
@@ -182,8 +219,8 @@ function CaptainSignup() {
                     </label>
                     <input
                       type="text"
-                      name="vehicleNumber"
-                      value={formData.vehicleNumber}
+                      name="vehicle.plate"
+                      value={formData.vehicle.plate}
                       onChange={handleChange}
                       required
                       className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"

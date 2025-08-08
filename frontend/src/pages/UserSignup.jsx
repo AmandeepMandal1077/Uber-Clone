@@ -1,7 +1,13 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { UserContext } from "../context/userContext.jsx";
+import axios from "axios";
 
 function UserSignup() {
+  const navigate = useNavigate();
+  const { user, setUser } = useContext(UserContext);
+
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
@@ -16,10 +22,37 @@ function UserSignup() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     // Handle signup logic here
-    console.log("User signup:", formData);
+    // console.log("User signup:", formData);
+    const newUser = {
+      fullname: {
+        firstname: formData.firstname,
+        lastname: formData.lastname,
+      },
+      email: formData.email,
+      password: formData.password,
+    };
+
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASE_URL}/users/register`,
+      newUser
+    );
+
+    console.log("Response from signup:", response);
+    if (response.status === 201) {
+      setFormData({
+        firstname: "",
+        lastname: "",
+        email: "",
+        password: "",
+      });
+      setUser(response.data.user);
+      localStorage.setItem("token", response.data.token);
+      console.log("User signed up successfully:", newUser);
+      navigate("/dashboard");
+    }
   };
 
   return (
