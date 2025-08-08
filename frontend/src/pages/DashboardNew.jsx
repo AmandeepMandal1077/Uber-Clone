@@ -98,16 +98,16 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="h-screen bg-[#fdf0d5] overflow-hidden">
+    <div className="h-screen w-screen bg-[#fdf0d5] overflow-hidden">
       {/* Desktop Layout */}
-      <div className="hidden md:flex h-full">
+      <div className="hidden md:flex h-full w-full">
         {/* Left Panel - Current Page Content */}
-        <div className="w-1/3 shadow-lg overflow-hidden">
+        <div className="w-1/3 h-full shadow-lg overflow-hidden flex-shrink-0">
           {renderCurrentPage()}
         </div>
 
         {/* Right Panel - Map */}
-        <div className="flex-1 p-4">
+        <div className="flex-1 h-full p-4 overflow-hidden">
           <div className="h-full w-full rounded-lg overflow-hidden shadow-lg">
             <MapPage />
           </div>
@@ -115,16 +115,16 @@ const Dashboard = () => {
       </div>
 
       {/* Mobile Layout */}
-      <div className="md:hidden h-screen flex flex-col overflow-hidden">
-        {/* Top Section - Current Page Content (40% of screen) */}
-        <div className="h-[40vh] shadow-lg flex-shrink-0 overflow-hidden">
-          {renderCurrentPage()}
+      <div className="md:hidden h-full w-full flex flex-col">
+        {/* Top Section - Current Page Content */}
+        <div className="h-2/5 w-full shadow-lg flex-shrink-0 overflow-hidden">
+          <div className="h-full w-full">{renderCurrentPage()}</div>
         </div>
 
-        {/* Bottom Section - Map (60% of screen) */}
-        <div className="h-[60vh] relative overflow-hidden flex-shrink-0">
+        {/* Bottom Section - Map */}
+        <div className="h-3/5 w-full flex-shrink-0 overflow-hidden">
           <div className="h-full w-full p-2">
-            <div className="h-full w-full rounded-lg overflow-hidden">
+            <div className="h-full w-full rounded-lg overflow-hidden shadow-lg">
               <MapPage />
             </div>
           </div>
@@ -134,12 +134,12 @@ const Dashboard = () => {
             <div className="absolute bottom-6 right-6 z-10">
               <button
                 onClick={() => {
-                  // This will be handled by the LocationSearchPageNew component
+                  // This will be handled by the LocationSearchPage component
                 }}
-                className="w-14 h-14 bg-[#c1121f] hover:bg-[#780000] text-white rounded-full shadow-lg transition-all"
+                className="w-14 h-14 bg-[#c1121f] hover:bg-[#780000] text-white rounded-full shadow-lg transition-all flex items-center justify-center"
               >
                 <svg
-                  className="w-6 h-6 mx-auto"
+                  className="w-6 h-6"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
