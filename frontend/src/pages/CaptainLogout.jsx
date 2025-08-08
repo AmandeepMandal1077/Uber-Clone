@@ -13,7 +13,7 @@ function CaptainLogout() {
         if (token) {
           // Call backend logout endpoint
           await axios.post(
-            `${import.meta.env.VITE_BASE_URL}/captain/logout`,
+            `${import.meta.env.VITE_BASE_URL}/captains/logout`,
             {},
             {
               headers: {
