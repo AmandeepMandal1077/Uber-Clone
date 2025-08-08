@@ -24,7 +24,7 @@ function CaptainLogin() {
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/captain/login`,
+        `${import.meta.env.VITE_BASE_URL}/captains/login`,
         formData
       );
 
@@ -43,7 +43,7 @@ function CaptainLogin() {
   return (
     <div className="min-h-screen bg-[#fdf0d5] flex flex-col">
       {/* Header */}
-      <header className="bg-[#780000] text-white p-4">
+      <header className="bg-[#780000] text-black p-4">
         <div className="flex items-center">
           <Link to="/" className="text-xl mr-4">
             ←
@@ -57,7 +57,7 @@ function CaptainLogin() {
         <div className="w-full max-w-md">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="text-center mb-6">
-              <div className="bg-[#780000] text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="bg-[#780000] text-black w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🚗</span>
               </div>
               <h2 className="text-2xl font-bold text-[#003049]">
@@ -101,7 +101,7 @@ function CaptainLogin() {
 
               <button
                 type="submit"
-                className="w-full bg-[#780000] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#c1121f] transition-colors"
+                className="w-full bg-[#780000] text-black py-3 px-6 rounded-lg font-medium hover:bg-[#c1121f] transition-colors"
               >
                 Login as Captain
               </button>

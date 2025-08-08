@@ -12,6 +12,7 @@ import CaptainContextProvider from "./context/CaptainContext";
 import CaptainProtectedRoute from "./context/CaptainProtectedRoute";
 import CaptainDashboard from "./pages/CaptainDashboard";
 import CaptainLogout from "./pages/CaptainLogout";
+import CaptainRide from "./pages/CaptainRide"; // Import the new page
 
 function App() {
   return (
@@ -35,6 +36,14 @@ function App() {
           element={
             <CaptainProtectedRoute>
               <CaptainDashboard />
+            </CaptainProtectedRoute>
+          }
+        />
+        <Route
+          path="/captain-ride"
+          element={
+            <CaptainProtectedRoute>
+              <CaptainRide />
             </CaptainProtectedRoute>
           }
         />

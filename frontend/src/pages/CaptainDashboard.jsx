@@ -1,103 +1,169 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { CaptainContext } from "../context/CaptainContext";
-import { Link } from "react-router-dom";
+import MapBackground from "../components/MapBackground";
+import CaptainHeader from "../components/captain/CaptainHeader";
+import CaptainProfileCard from "../components/captain/CaptainProfileCard";
+import RideRequestsList from "../components/captain/RideRequestsList";
+import CurrentRidePanel from "../components/captain/CurrentRidePanel";
+import useGeolocation from "../hooks/useGeolocation";
+import { generateRideRequest } from "../utils/rideSimulation";
 
 function CaptainDashboard() {
   const { captain } = useContext(CaptainContext);
 
+  // Captain status states
+  const [isOnline, setIsOnline] = useState(false);
+
+  // Use the geolocation hook
+  const currentLocation = useGeolocation(isOnline);
+
+  // Ride management states
+  const [rideRequests, setRideRequests] = useState([]);
+  const [currentRide, setCurrentRide] = useState(null);
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [rideStarted, setRideStarted] = useState(false);
+  const [completingRide, setCompletingRide] = useState(false);
+  const [enteredOtp, setEnteredOtp] = useState("");
+
+  // Debug state to force show the OTP for testing
+  const [testMode, setTestMode] = useState(true);
+
+  // Simulate ride requests when captain is online
+  useEffect(() => {
+    let requestTimer;
+
+    if (isOnline && !currentRide && rideRequests.length < 10) {
+      // Generate a random time between 5-15 seconds for the next request
+      const nextRequestTime = Math.floor(Math.random() * (15000 - 5000) + 5000);
+
+      requestTimer = setTimeout(() => {
+        simulateRideRequest();
+      }, nextRequestTime);
+    }
+
+    return () => {
+      if (requestTimer) clearTimeout(requestTimer);
+    };
+  }, [isOnline, currentRide, rideRequests]);
+
+  // Simulate a ride request with random data
+  const simulateRideRequest = () => {
+    if (!isOnline || rideRequests.length >= 10) return;
+
+    const newRideRequest = generateRideRequest();
+    setRideRequests((prev) => [...prev, newRideRequest]);
+  };
+
+  // Toggle captain's online status
+  const toggleOnlineStatus = () => {
+    setIsOnline(!isOnline);
+
+    // If going offline, clear any pending requests
+    if (isOnline) {
+      setRideRequests([]);
+      setCurrentRide(null);
+    }
+  };
+
+  // Handle accepting a ride request
+  const handleAcceptRide = (rideRequest) => {
+    setCurrentRide(rideRequest);
+    setRideRequests((prev) => prev.filter((req) => req.id !== rideRequest.id));
+    // We don't set showOtpVerification true yet, as the captain needs to reach the pickup location first
+  };
+
+  // Handle declining a ride request
+  const handleDeclineRide = (rideRequestId) => {
+    setRideRequests((prev) => prev.filter((req) => req.id !== rideRequestId));
+  };
+
+  // Handle arriving at pickup location
+  const handleArrivedAtPickup = () => {
+    setShowOtpVerification(true);
+  };
+
+  // Handle OTP verification
+  const handleVerifyOtp = () => {
+    if (enteredOtp === currentRide.otp) {
+      setRideStarted(true);
+      setShowOtpVerification(false);
+      setEnteredOtp("");
+    } else {
+      alert("Invalid OTP. Please try again.");
+    }
+  };
+
+  // Handle canceling OTP verification
+  const handleCancelOtp = () => {
+    setShowOtpVerification(false);
+  };
+
+  // Handle ride completion
+  const handleCompleteRide = () => {
+    setCompletingRide(true);
+  };
+
+  // Handle ride confirmation
+  const handleConfirmRideComplete = () => {
+    // In a real app, this would send the completion to the backend
+    // and update earnings, ride history, etc.
+    setCurrentRide(null);
+    setRideStarted(false);
+    setCompletingRide(false);
+
+    // Simulate adding to earnings
+    const fare = parseInt(currentRide.fare.replace("₹", ""));
+    alert(`Ride completed! You earned ₹${fare}`);
+  };
+
   return (
-    <div className="min-h-screen bg-[#fdf0d5]">
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-[#780000] text-white p-4 shadow-lg">
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold">YATRA Captain Dashboard</h1>
-          <Link
-            to="/captain/logout"
-            className="bg-[#c1121f] px-4 py-2 rounded-lg text-sm hover:bg-[#003049] transition-colors"
-          >
-            Logout
-          </Link>
-        </div>
-      </header>
+      <CaptainHeader
+        isOnline={isOnline}
+        toggleOnlineStatus={toggleOnlineStatus}
+      />
 
       {/* Main Content */}
-      <div className="p-6">
-        {/* Welcome Section */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex items-center mb-4">
-            <div className="bg-[#780000] text-white w-12 h-12 rounded-full flex items-center justify-center mr-4">
-              <span className="text-xl">🚗</span>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-[#003049]">
-                Welcome, Captain {captain.fullname?.firstname}!
-              </h2>
-              <p className="text-[#669bbc]">Ready to earn with YATRA</p>
-            </div>
-          </div>
+      <div className="flex-1 flex flex-col">
+        {/* Control Panel */}
+        <div className="p-4 bg-white shadow-md z-10">
+          <CaptainProfileCard
+            captain={captain}
+            isOnline={isOnline}
+            toggleOnlineStatus={toggleOnlineStatus}
+          />
+
+          {isOnline && !currentRide && (
+            <RideRequestsList
+              rideRequests={rideRequests}
+              onAcceptRide={handleAcceptRide}
+              onDeclineRide={handleDeclineRide}
+            />
+          )}
+
+          {/* Current Ride Panel */}
+          {currentRide && (
+            <CurrentRidePanel
+              currentRide={currentRide}
+              rideStarted={rideStarted}
+              showOtpVerification={showOtpVerification}
+              completingRide={completingRide}
+              enteredOtp={enteredOtp}
+              setEnteredOtp={setEnteredOtp}
+              testMode={testMode}
+              onArrivedAtPickup={handleArrivedAtPickup}
+              onVerifyOtp={handleVerifyOtp}
+              onCancelOtp={handleCancelOtp}
+              onCompleteRide={handleCompleteRide}
+              onConfirmRideComplete={handleConfirmRideComplete}
+            />
+          )}
         </div>
 
-        {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-[#780000] mb-4">
-              Status
-            </h3>
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-              <span className="text-[#003049]">Online & Available</span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-[#780000] mb-4">
-              Today's Earnings
-            </h3>
-            <p className="text-2xl font-bold text-[#003049]">₹0</p>
-          </div>
-        </div>
-
-        {/* Vehicle Info */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-[#780000] mb-4">
-            Your Vehicle
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-[#669bbc] text-sm">Type</p>
-              <p className="text-[#003049] font-medium">
-                {captain.vehicle?.type || "Not set"}
-              </p>
-            </div>
-            <div>
-              <p className="text-[#669bbc] text-sm">Color</p>
-              <p className="text-[#003049] font-medium">
-                {captain.vehicle?.color || "Not set"}
-              </p>
-            </div>
-            <div>
-              <p className="text-[#669bbc] text-sm">Capacity</p>
-              <p className="text-[#003049] font-medium">
-                {captain.vehicle?.capacity || "Not set"} seats
-              </p>
-            </div>
-            <div>
-              <p className="text-[#669bbc] text-sm">Number</p>
-              <p className="text-[#003049] font-medium">
-                {captain.vehicle?.number || "Not set"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button className="bg-[#780000] text-white py-4 px-6 rounded-lg font-medium hover:bg-[#c1121f] transition-colors">
-            Go Online
-          </button>
-          <button className="bg-[#669bbc] text-white py-4 px-6 rounded-lg font-medium hover:bg-[#003049] transition-colors">
-            View Ride History
-          </button>
+        {/* Map Container */}
+        <div className="flex-1 relative min-h-[300px]">
+          <MapBackground center={currentLocation} />
         </div>
       </div>
     </div>

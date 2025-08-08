@@ -13,9 +13,9 @@ function CaptainSignup() {
     password: "",
     vehicle: {
       color: "",
-      plate: "",
+      number: "",
       capacity: "",
-      vehicleType: "",
+      type: "",
     },
   });
 
@@ -47,7 +47,7 @@ function CaptainSignup() {
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/captain/register`,
+        `${import.meta.env.VITE_BASE_URL}/captains/register`,
         formData
       );
 
@@ -66,7 +66,7 @@ function CaptainSignup() {
   return (
     <div className="min-h-screen bg-[#fdf0d5] flex flex-col">
       {/* Header */}
-      <header className="bg-[#780000] text-white p-4">
+      <header className="bg-[#780000] text-black p-4">
         <div className="flex items-center">
           <Link to="/" className="text-xl mr-4">
             ←
@@ -80,7 +80,7 @@ function CaptainSignup() {
         <div className="max-w-md mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="text-center mb-6">
-              <div className="bg-[#780000] text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="bg-[#780000] text-black w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🚗</span>
               </div>
               <h2 className="text-2xl font-bold text-[#003049]">
@@ -108,7 +108,7 @@ function CaptainSignup() {
                       value={formData.fullname.firstname}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"
+                      className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm text-black"
                       placeholder="First name"
                     />
                   </div>
@@ -121,7 +121,7 @@ function CaptainSignup() {
                       name="fullname.lastname"
                       value={formData.fullname.lastname}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"
+                      className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm text-black"
                       placeholder="Last name"
                     />
                   </div>
@@ -137,7 +137,7 @@ function CaptainSignup() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"
+                    className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm text-black"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -152,7 +152,7 @@ function CaptainSignup() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"
+                    className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm text-black"
                     placeholder="Create a password"
                   />
                 </div>
@@ -169,8 +169,8 @@ function CaptainSignup() {
                       Vehicle Type
                     </label>
                     <select
-                      name="vehicle.vehicleType"
-                      value={formData.vehicle.vehicleType}
+                      name="vehicle.type"
+                      value={formData.vehicle.type}
                       onChange={handleChange}
                       required
                       className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"
@@ -191,7 +191,7 @@ function CaptainSignup() {
                       value={formData.vehicle.color}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"
+                      className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm text-black"
                       placeholder="Vehicle color"
                     />
                   </div>
@@ -209,7 +209,7 @@ function CaptainSignup() {
                       onChange={handleChange}
                       required
                       min="1"
-                      className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"
+                      className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm text-black"
                       placeholder="Seats"
                     />
                   </div>
@@ -219,11 +219,11 @@ function CaptainSignup() {
                     </label>
                     <input
                       type="text"
-                      name="vehicle.plate"
-                      value={formData.vehicle.plate}
+                      name="vehicle.number"
+                      value={formData.vehicle.number}
                       onChange={handleChange}
                       required
-                      className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm"
+                      className="w-full px-3 py-2 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-sm text-black"
                       placeholder="ABC1234"
                     />
                   </div>
@@ -232,7 +232,7 @@ function CaptainSignup() {
 
               <button
                 type="submit"
-                className="w-full bg-[#780000] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#c1121f] transition-colors mt-6"
+                className="w-full bg-[#780000] text-black py-3 px-6 rounded-lg font-medium hover:bg-[#c1121f] transition-colors mt-6"
               >
                 Join as Captain
               </button>
