@@ -1,1 +1,24 @@
 @import "tailwindcss";
+@plugin "daisyui";
+
+/* Mobile viewport fixes */
+html,
+body {
+  overflow-x: hidden;
+  height: 100%;
+  touch-action: manipulation;
+}
+
+#root {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/* Prevent mobile zoom on input focus */
+@media screen and (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
