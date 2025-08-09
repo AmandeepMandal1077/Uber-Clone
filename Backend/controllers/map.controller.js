@@ -28,12 +28,23 @@ const getDistanceAndTime = async (req, res) => {
   }
   try {
     const { origin, destination } = req.query;
-    const { distanceInKm, duration, durationInString } =
-      await getDistanceAndDuration({
-        origin,
-        destination,
+    const {
+      distanceInMeters,
+      distanceInKm,
+      durationInSeconds,
+      durationInString,
+    } = await getDistanceAndDuration({
+      origin,
+      destination,
+    });
+    res
+      .status(200)
+      .json({
+        distanceInMeters,
+        distanceInKm,
+        durationInSeconds,
+        durationInString,
       });
-    res.status(200).json({ distanceInKm, duration, durationInString });
   } catch (error) {
     res.status(500).json({ message: error.message || "Internal Server Error" });
   }

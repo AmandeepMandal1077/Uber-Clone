@@ -23,11 +23,12 @@ app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/api", limiter);
+app.use("/maps", limiter);
 
 import userRouter from "./routes/user.route.js";
 import captainRouter from "./routes/captain.route.js";
 import mapRouter from "./routes/map.route.js";
+import rideRouter from "./routes/ride.route.js";
 
 app.get("/", (req, res) => {
   res.send("Hello, World!");
@@ -35,6 +36,7 @@ app.get("/", (req, res) => {
 
 app.use("/users", userRouter);
 app.use("/captains", captainRouter);
-app.use("/api", mapRouter);
+app.use("/maps", mapRouter);
+app.use("/rides", rideRouter);
 
 export default app;

@@ -55,7 +55,12 @@ const getDistanceAndDuration = async ({ origin, destination }) => {
     );
 
     const durationInString = `${days}d ${hours}h ${minutes}m`;
-    return { distanceInKm, duration, durationInString };
+    return {
+      distanceInMeters: distance,
+      distanceInKm,
+      durationInSeconds: duration,
+      durationInString,
+    };
   } catch (error) {
     throw new Error("Failed to fetch distance and duration");
   }
