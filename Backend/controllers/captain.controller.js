@@ -9,33 +9,46 @@ const registerCaptain = async (req, res, next) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const {
-    fullname: { firstname, lastname },
-    email,
-    password,
-    vehicle: { type, color, capacity, number },
-  } = req.body;
+  try {
+    const {
+      fullname: { firstname, lastname },
+      email,
+      password,
+      vehicle: { type, color, capacity, number },
+    } = req.body;
 
-  const isAlreadyRegistered = await CAPTAIN.findOne({ email });
-  if (isAlreadyRegistered) {
-    return res.status(400).json({ message: "Captain already registered" });
+    const isAlreadyRegistered = await CAPTAIN.findOne({ email });
+    if (isAlreadyRegistered) {
+      return res.status(400).json({ message: "Captain already registered" });
+    }
+
+    // Check if the vehicle number is already in use
+    const vehicleExists = await CAPTAIN.findOne({ "vehicle.number": number });
+    if (vehicleExists) {
+      return res
+        .status(400)
+        .json({ message: "Vehicle number already registered" });
+    }
+
+    const hashedPassword = await CAPTAIN.hashPassword(password);
+
+    const captain = await createCaptain({
+      firstname,
+      lastname,
+      email,
+      password: hashedPassword,
+      vehicleType: type,
+      vehicleColor: color,
+      vehicleCapacity: capacity,
+      vehicleNumber: number,
+    });
+
+    const token = captain.generateAuthToken();
+    res.status(201).json({ token, captain });
+  } catch (error) {
+    console.error("Registration error:", error);
+    return res.status(500).json({ message: error.message });
   }
-
-  const hashedPassword = await CAPTAIN.hashPassword(password);
-
-  const captain = await createCaptain({
-    firstname,
-    lastname,
-    email,
-    password: hashedPassword,
-    vehicleType: type,
-    vehicleColor: color,
-    vehicleCapacity: capacity,
-    vehicleNumber: number,
-  });
-
-  const token = captain.generateAuthToken();
-  res.status(201).json({ token, captain });
 };
 
 const loginCaptain = async (req, res, next) => {
