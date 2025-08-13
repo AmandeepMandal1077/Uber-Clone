@@ -26,7 +26,7 @@ const captainSchema = new mongoose.Schema({
     minlength: [6, "Password must be at least 6 characters"],
     select: false,
   },
-  socketIO: {
+  socketId: {
     type: String,
   },
   status: {
@@ -57,12 +57,16 @@ const captainSchema = new mongoose.Schema({
     },
   },
   location: {
-    lat: {
+    latitude: {
       type: Number,
     },
-    lng: {
+    longitude: {
       type: Number,
     },
+  },
+  currentRide: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Ride",
   },
 });
 

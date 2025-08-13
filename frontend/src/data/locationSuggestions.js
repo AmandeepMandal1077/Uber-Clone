@@ -1,4 +1,6 @@
 // Location suggestions data for YATRA
+import axios from "axios";
+
 export const locationSuggestions = [
   // Mumbai locations
   {
@@ -182,10 +184,81 @@ export const locationSuggestions = [
   },
 ];
 
-export const getLocationSuggestions = (query) => {
-  if (!query || query.length < 1) return [];
+export const getLocationSuggestions = async (query) => {
+  // Return empty array if query is not valid
+  if (!query || typeof query !== "string") return [];
 
-  const lowercaseQuery = query.toLowerCase();
+  // Trim the query and check if it's still valid after trimming
+  const trimmedQuery = query.trim();
+  if (trimmedQuery.length < 2) return [];
+
+  const lowercaseQuery = trimmedQuery.toLowerCase();
+
+  // Using a debounce approach - add delay to prevent too many requests
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  try {
+    // Try to get suggestions from API
+    console.log("requesting location suggestions");
+    const response = await axios.get(
+      `${
+        import.meta.env.VITE_BASE_URL
+      }/maps/get-suggestions?location=${encodeURIComponent(lowercaseQuery)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    if (response && response.data && Array.isArray(response.data)) {
+      // Transform API response to match our expected format
+      const formattedSuggestions = response.data.map((item, index) => ({
+        id: item.id || `api-${index}`,
+        name: item.displayName || item.name || `Location ${index + 1}`,
+        area: item.address || item.area || "Unknown area",
+        type: item.type || "default",
+      }));
+
+      // Filter and sort suggestions
+      return formattedSuggestions
+        .filter((location) => {
+          if (!location || !location.name) return false;
+          return (
+            location.name.toLowerCase().includes(lowercaseQuery) ||
+            (location.area &&
+              location.area.toLowerCase().includes(lowercaseQuery))
+          );
+        })
+        .sort((a, b) => {
+          // Prioritize exact matches and those starting with the query
+          const aNameMatch = a.name.toLowerCase().startsWith(lowercaseQuery);
+          const bNameMatch = b.name.toLowerCase().startsWith(lowercaseQuery);
+
+          if (aNameMatch && !bNameMatch) return -1;
+          if (!aNameMatch && bNameMatch) return 1;
+
+          return a.name.length - b.name.length; // Shorter names first
+        })
+        .slice(0, 6); // Return maximum 6 suggestions
+    } else {
+      console.log("Using local suggestions due to invalid API response format");
+      // Fallback to local suggestions
+      return localSuggestionsFallback(lowercaseQuery);
+    }
+  } catch (error) {
+    console.error("Error fetching location suggestions:", error);
+    // Return local fallback suggestions if API fails
+    return localSuggestionsFallback(lowercaseQuery);
+  }
+};
+
+// Helper function to filter local suggestions
+const localSuggestionsFallback = (lowercaseQuery) => {
+  // Don't process if query is empty or just spaces
+  if (!lowercaseQuery || lowercaseQuery.trim() === "") {
+    return [];
+  }
 
   return locationSuggestions
     .filter(
@@ -194,16 +267,15 @@ export const getLocationSuggestions = (query) => {
         location.area.toLowerCase().includes(lowercaseQuery)
     )
     .sort((a, b) => {
-      // Prioritize exact matches and those starting with the query
       const aNameMatch = a.name.toLowerCase().startsWith(lowercaseQuery);
       const bNameMatch = b.name.toLowerCase().startsWith(lowercaseQuery);
 
       if (aNameMatch && !bNameMatch) return -1;
       if (!aNameMatch && bNameMatch) return 1;
 
-      return a.name.length - b.name.length; // Shorter names first
+      return a.name.length - b.name.length;
     })
-    .slice(0, 6); // Return maximum 6 suggestions
+    .slice(0, 6);
 };
 
 export const getLocationIcon = (type) => {

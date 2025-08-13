@@ -2,15 +2,15 @@ import mongoose from "mongoose";
 
 const rideSchema = new mongoose.Schema(
   {
-    userId: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
       required: true,
     },
 
-    captainId: {
+    captain: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Captain",
+      ref: "captain",
     },
     pickupLocation: {
       type: String,
@@ -26,7 +26,7 @@ const rideSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "in_progress", "completed", "cancelled"],
+      enum: ["pending", "confirmed", "ongoing", "completed", "cancelled"],
       default: "pending",
     },
     paymentId: {

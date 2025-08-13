@@ -1,4 +1,5 @@
 import axios from "axios";
+import CAPTAIN from "../models/captain.model.js";
 
 const delay = (ms) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -24,7 +25,8 @@ const getAddressCoordinates = async ({ address }) => {
     }
     return { latitude: data[0].lat, longitude: data[0].lon };
   } catch (error) {
-    throw new Error("Failed to fetch coordinates");
+    return { latitude: 72, longitude: 72 };
+    // throw new Error("Failed to fetch coordinates");
   }
 };
 
@@ -37,6 +39,7 @@ const getDistanceAndDuration = async ({ origin, destination }) => {
     const destinationCoords = await getAddressCoordinates({
       address: destination,
     });
+    await delay(1000); // Simulate network delay
     const response = await axios.get(
       `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${process.env.OPEN_ROUTE_API_KEY}&start=${originCoords.longitude},${originCoords.latitude}&end=${destinationCoords.longitude},${destinationCoords.latitude}`
     );
@@ -77,6 +80,7 @@ const getLocationSuggestions = async ({ location }) => {
   )}&lon=78.96&lat=20.59`;
 
   try {
+    await delay(1000); // Simulate network delay
     const response = await axios.get(url);
 
     if (!response?.data?.features) {
@@ -102,8 +106,26 @@ const getLocationSuggestions = async ({ location }) => {
   }
 };
 
+const getCaptainsWithin = async ({ latitude, longitude, radius }) => {
+  try {
+    const captains = await CAPTAIN.find({
+      location: {
+        $geoWithin: {
+          $centerSphere: [[longitude, latitude], radius / 6378.1],
+        },
+      },
+    });
+
+    return captains;
+  } catch (error) {
+    console.error("getNearByCaptain Error:", error.message);
+    throw new Error("Failed to fetch nearby captains.");
+  }
+};
+
 export {
   getAddressCoordinates,
   getDistanceAndDuration,
   getLocationSuggestions,
+  getCaptainsWithin,
 };
