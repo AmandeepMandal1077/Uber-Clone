@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import MapComponent from "../components/MapComponent";
+import ConnectedLiveTrackingMap from "../components/ConnectedLiveTrackingMap";
 
 const CaptainRide = () => {
   const [rideRequest, setRideRequest] = useState(null);
@@ -140,7 +140,7 @@ const CaptainRide = () => {
   return (
     <div className="h-screen w-screen bg-[#fdf0d5] flex flex-col">
       <div className="flex-1 h-full w-full relative">
-        <MapComponent />
+        <ConnectedLiveTrackingMap />
         <div className="absolute top-4 left-4 right-4 z-10">
           {renderContent()}
         </div>

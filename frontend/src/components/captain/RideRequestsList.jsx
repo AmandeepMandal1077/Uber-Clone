@@ -32,7 +32,7 @@ const RideRequestsList = ({ rideRequests, onAcceptRide, onDeclineRide }) => {
             )}
             {rideRequests.map((request) => (
               <RideRequestCard
-                key={request.id}
+                key={request.id || request._id || `ride-${Math.random()}`}
                 request={request}
                 onAccept={onAcceptRide}
                 onDecline={onDeclineRide}

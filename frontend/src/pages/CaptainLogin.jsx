@@ -79,7 +79,7 @@ function CaptainLogin() {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors"
+                  className="w-full px-4 py-3 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-black"
                   placeholder="Enter your email"
                 />
               </div>
@@ -94,7 +94,7 @@ function CaptainLogin() {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors"
+                  className="w-full px-4 py-3 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#780000] transition-colors text-black"
                   placeholder="Enter your password"
                 />
               </div>

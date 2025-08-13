@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 export const CaptainContext = React.createContext();
 
 function CaptainContextProvider({ children }) {
   const [captain, setCaptain] = useState({
+    _id: "",
     fullname: {
       firstname: "",
       lastname: "",
@@ -27,6 +29,40 @@ function CaptainContextProvider({ children }) {
     total: 0,
   });
   const [rideHistory, setRideHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch captain data from the server using the token
+  useEffect(() => {
+    const fetchCaptainData = async () => {
+      const token = localStorage.getItem("captain-token");
+
+      if (token) {
+        try {
+          setLoading(true);
+          const response = await axios.get(
+            `${import.meta.env.VITE_BASE_URL}/captains/profile`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (response.data && response.data.captain) {
+            setCaptain(response.data.captain);
+          }
+        } catch (error) {
+          console.error("Failed to fetch captain data:", error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    fetchCaptainData();
+  }, []);
 
   // Update captain status when isOnline changes
   useEffect(() => {
@@ -104,6 +140,7 @@ function CaptainContextProvider({ children }) {
         completeRide,
         earnings,
         rideHistory,
+        loading,
       }}
     >
       {children}

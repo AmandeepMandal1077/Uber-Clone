@@ -5,7 +5,7 @@ const CaptainHeader = ({ isOnline, toggleOnlineStatus }) => {
   return (
     <header className="bg-[#780000] text-white p-4 shadow-lg z-10">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold">YATRA Captain</h1>
+        <h1 className="text-xl font-bold text-white">YATRA Captain</h1>
         <div className="flex items-center space-x-3">
           <div className="flex items-center">
             <div

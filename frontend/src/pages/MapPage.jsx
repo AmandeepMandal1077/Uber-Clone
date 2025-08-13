@@ -1,10 +1,10 @@
 import React from "react";
-import MapComponent from "../components/MapComponent";
+import ConnectedLiveTrackingMap from "../components/ConnectedLiveTrackingMap";
 
 const MapPage = () => {
   return (
     <div className="h-full w-full">
-      <MapComponent />
+      <ConnectedLiveTrackingMap />
     </div>
   );
 };

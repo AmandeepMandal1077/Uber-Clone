@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getCoordinates,
   getDistanceAndTime,
+  getNearByCaptains,
   getSuggestions,
 } from "../controllers/map.controller.js";
 import { authenticateUser } from "../middlewares/auth.middleware.js";
@@ -32,6 +33,15 @@ router.get(
   authenticateUser,
   query("location").isString().notEmpty().withMessage("Location is required"),
   getSuggestions
+);
+
+router.get(
+  "/get-nearby-captains",
+  authenticateUser,
+  query("latitude").isNumeric().withMessage("Latitude is required"),
+  query("longitude").isNumeric().withMessage("Longitude is required"),
+  query("radius").isNumeric().withMessage("Radius is required"),
+  getNearByCaptains
 );
 
 export default router;

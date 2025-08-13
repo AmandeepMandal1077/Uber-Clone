@@ -34,14 +34,24 @@ const CurrentRidePanel = ({
 
       <div className="flex items-center mb-3">
         <div className="w-10 h-10 bg-[#669bbc] rounded-full flex items-center justify-center mr-3 text-white font-bold">
-          {currentRide.customerName.charAt(0)}
+          {(
+            currentRide.user?.fullname?.firstname ||
+            currentRide.customerName ||
+            "U"
+          )
+            .charAt(0)
+            .toUpperCase()}
         </div>
         <div>
-          <p className="font-medium">{currentRide.customerName}</p>
+          <p className="font-medium">
+            {currentRide.user?.fullname?.firstname ||
+              currentRide.customerName ||
+              "User"}
+          </p>
           <div className="flex items-center">
             <span className="text-yellow-400 mr-1">★</span>
             <span className="text-sm text-gray-600">
-              {currentRide.customerRating}
+              {currentRide.customerRating || "4.5"}
             </span>
           </div>
         </div>
@@ -50,16 +60,16 @@ const CurrentRidePanel = ({
       <div className="bg-gray-100 p-3 rounded-lg mb-3">
         <div className="flex items-center mb-2">
           <div className="w-3 h-3 bg-[#c1121f] rounded-full mr-2"></div>
-          <p className="text-sm">{currentRide.pickup}</p>
+          <p className="text-sm text-gray-800">{currentRide.pickup}</p>
         </div>
         <div className="border-l-2 border-dashed border-gray-300 h-4 ml-1.5"></div>
         <div className="flex items-center">
           <div className="w-3 h-3 bg-[#669bbc] rounded-full mr-2"></div>
-          <p className="text-sm">{currentRide.dropoff}</p>
+          <p className="text-sm text-gray-800">{currentRide.dropoff}</p>
         </div>
       </div>
 
-      <div className="flex justify-between items-center mb-3 text-sm">
+      <div className="flex justify-between items-center mb-3 text-sm text-gray-800">
         <div>
           <span className="font-medium">Distance:</span> {currentRide.distance}
         </div>

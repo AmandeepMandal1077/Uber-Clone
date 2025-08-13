@@ -72,7 +72,7 @@ function UserLogin() {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#c1121f] transition-colors"
+                  className="w-full px-4 py-3 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#c1121f] transition-colors text-black"
                   placeholder="Enter your email"
                 />
               </div>
@@ -87,8 +87,9 @@ function UserLogin() {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#c1121f] transition-colors"
+                  className="w-full px-4 py-3 border-2 border-[#669bbc] rounded-lg focus:outline-none focus:border-[#c1121f] transition-colors text-black"
                   placeholder="Enter your password"
+                  minLength={6}
                 />
               </div>
 

@@ -18,7 +18,7 @@ export const customerNames = [
 ];
 
 // Generate a random ride request
-export const generateRideRequest = () => {
+export const generateRideRequest = (options = {}) => {
   const pickupIndex = Math.floor(Math.random() * locations.length);
   let dropoffIndex = Math.floor(Math.random() * locations.length);
 
@@ -33,7 +33,7 @@ export const generateRideRequest = () => {
   const customerName =
     customerNames[Math.floor(Math.random() * customerNames.length)];
   const customerRating = (4 + Math.random()).toFixed(1);
-  const otp = String(1000 + Math.floor(Math.random() * 9000)); // 4-digit OTP
+  const otp = String(100000 + Math.floor(Math.random() * 900000)); // 6-digit OTP
 
   return {
     id: Date.now().toString(),

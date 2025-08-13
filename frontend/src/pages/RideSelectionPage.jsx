@@ -1,4 +1,9 @@
-import React from "react";
+import React, { useContext } from "react";
+import { SocketContext } from "../context/SocketContext.jsx";
+import RideTracker from "../components/RideTracker";
+import SearchingDriver from "../components/SearchingDriver";
+import PaymentConfirmation from "../components/PaymentConfirmation";
+import OTPDisplay from "../components/OTPDisplay";
 
 const RideSelectionPage = ({
   rideOptions,
@@ -9,74 +14,44 @@ const RideSelectionPage = ({
   isSearchingDriver,
   showPaymentConfirm,
   onConfirmPayment,
+  pickup,
+  destination,
+  otp,
+  isLoadingOtp,
+  // New props for ride tracking
+  activeRide,
+  rideState,
+  pickupCoords,
+  destinationCoords,
+  onRideComplete,
 }) => {
+  const { sendMessage } = useContext(SocketContext);
+
   if (isSearchingDriver) {
-    return (
-      <div className="h-full w-full bg-[#fdf0d5] flex items-center justify-center overflow-hidden">
-        <div className="text-center p-4">
-          <div className="animate-spin rounded-full h-12 w-12 md:h-16 md:w-16 border-b-2 border-[#c1121f] mx-auto mb-4"></div>
-          <h3 className="text-lg md:text-xl font-semibold text-[#003049] mb-2">
-            Looking for drivers...
-          </h3>
-          <p className="text-[#003049] opacity-75 text-sm md:text-base">
-            We're finding the best driver for you
-          </p>
-        </div>
-      </div>
-    );
+    return <SearchingDriver />;
   }
 
   if (showPaymentConfirm) {
+    // If OTP is available and we have an active ride, show only the OTP section
+    if (otp && activeRide) {
+      return (
+        <OTPDisplay
+          otp={otp}
+          pickup={pickup}
+          destination={destination}
+          activeRide={activeRide}
+          onBack={onBack}
+        />
+      );
+    }
+
+    // Default payment confirmation screen (before OTP)
     return (
-      <div className="h-full w-full bg-[#fdf0d5] flex items-center justify-center overflow-hidden">
-        <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-4 md:p-6 text-center mx-4">
-          <div className="w-12 h-12 md:w-16 md:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-6 h-6 md:w-8 md:h-8 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <h3 className="text-lg md:text-xl font-semibold text-[#003049] mb-2">
-            Driver Found!
-          </h3>
-          <p className="text-[#003049] opacity-75 mb-4 text-sm md:text-base">
-            Confirm your payment to complete the booking
-          </p>
-          <div className="bg-[#fdf0d5] rounded-lg p-3 md:p-4 mb-4 md:mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[#003049] font-medium text-sm md:text-base">
-                Ride Type:
-              </span>
-              <span className="text-[#003049] text-sm md:text-base">
-                {selectedRide?.name}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[#003049] font-medium text-sm md:text-base">
-                Total Amount:
-              </span>
-              <span className="text-[#c1121f] font-bold text-lg">
-                {selectedRide?.price}
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={onConfirmPayment}
-            className="w-full bg-[#c1121f] hover:bg-[#780000] text-white py-2 md:py-3 px-4 md:px-6 rounded-lg font-medium transition-colors text-sm md:text-base"
-          >
-            Confirm Payment
-          </button>
-        </div>
-      </div>
+      <PaymentConfirmation
+        onConfirmPayment={onConfirmPayment}
+        pickup={pickup}
+        destination={destination}
+      />
     );
   }
 
@@ -132,21 +107,9 @@ const RideSelectionPage = ({
                   <h3 className="font-semibold text-[#003049] text-sm md:text-lg">
                     {ride.name}
                   </h3>
-                  <p className="text-[#003049] opacity-75 text-xs md:text-sm">
-                    {ride.description}
-                  </p>
                   <div className="flex items-center gap-1 mt-1">
-                    <svg
-                      className="w-3 h-3 md:w-4 md:h-4 text-yellow-400 fill-current flex-shrink-0"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                    </svg>
-                    <span className="text-[#003049] text-xs">
-                      {ride.rating}
-                    </span>
                     <span className="text-[#003049] opacity-50 text-xs">
-                      • {ride.time}
+                      {ride.time}
                     </span>
                   </div>
                 </div>

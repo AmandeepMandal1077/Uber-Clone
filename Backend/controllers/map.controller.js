@@ -1,6 +1,7 @@
 import axios from "axios";
 import {
   getAddressCoordinates,
+  getCaptainsWithin,
   getDistanceAndDuration,
   getLocationSuggestions,
 } from "../services/map.service.js";
@@ -37,14 +38,12 @@ const getDistanceAndTime = async (req, res) => {
       origin,
       destination,
     });
-    res
-      .status(200)
-      .json({
-        distanceInMeters,
-        distanceInKm,
-        durationInSeconds,
-        durationInString,
-      });
+    res.status(200).json({
+      distanceInMeters,
+      distanceInKm,
+      durationInSeconds,
+      durationInString,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message || "Internal Server Error" });
   }
@@ -64,4 +63,27 @@ const getSuggestions = async (req, res) => {
   }
 };
 
-export { getCoordinates, getDistanceAndTime, getSuggestions };
+const getNearByCaptains = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  try {
+    const { latitude, longitude, radius } = req.query;
+    const captains = await getCaptainsWithin({
+      latitude,
+      longitude,
+      radius,
+    });
+    res.status(200).json({ captains });
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Internal Server Error" });
+  }
+};
+
+export {
+  getCoordinates,
+  getDistanceAndTime,
+  getSuggestions,
+  getNearByCaptains,
+};

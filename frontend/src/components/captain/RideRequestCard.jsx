@@ -5,34 +5,46 @@ const RideRequestCard = ({ request, onAccept, onDecline }) => {
     <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center">
-          <div className="w-10 h-10 bg-[#669bbc] rounded-full flex items-center justify-center mr-3 text-white font-bold">
-            {request.customerName.charAt(0)}
+          <div className="w-10 h-10 bg-[#669bbc] rounded-full flex items-center justify-center mr-3 text-black font-bold capitalize">
+            {request.user &&
+            request.user.fullname &&
+            request.user.fullname.firstname
+              ? request.user.fullname.firstname.charAt(0)
+              : request.customerName
+              ? request.customerName.charAt(0)
+              : "U"}
           </div>
           <div>
-            <p className="font-medium">{request.customerName}</p>
-            <div className="flex items-center">
+            <p className="font-medium">
+              {request.user &&
+              request.user.fullname &&
+              request.user.fullname.firstname
+                ? request.user.fullname.firstname
+                : request.customerName || "User"}
+            </p>
+            {/* <div className="flex items-center">
               <span className="text-yellow-400 mr-1">★</span>
               <span className="text-sm text-gray-600">
-                {request.customerRating}
+                {request.user.customerRating}
               </span>
-            </div>
+            </div> */}
           </div>
         </div>
         <div className="text-right">
           <p className="font-bold text-[#c1121f]">{request.fare}</p>
-          <p className="text-sm text-gray-500">{request.distance}</p>
+          <p className="text-sm text-black">{request.distance}</p>
         </div>
       </div>
 
       <div className="bg-white p-2 rounded mb-3">
         <div className="flex items-center mb-1">
           <div className="w-3 h-3 bg-[#c1121f] rounded-full mr-2"></div>
-          <p className="text-sm">{request.pickup}</p>
+          <p className="text-sm text-black">{request.pickup}</p>
         </div>
         <div className="border-l-2 border-dashed border-gray-300 h-4 ml-1.5"></div>
         <div className="flex items-center">
           <div className="w-3 h-3 bg-[#669bbc] rounded-full mr-2"></div>
-          <p className="text-sm">{request.dropoff}</p>
+          <p className="text-sm text-black">{request.dropoff}</p>
         </div>
       </div>
 
@@ -45,7 +57,7 @@ const RideRequestCard = ({ request, onAccept, onDecline }) => {
         </button>
         <button
           onClick={() => onAccept(request)}
-          className="flex-1 bg-[#003049] text-white py-2 rounded font-medium hover:bg-[#00436b] transition-colors text-sm"
+          className="flex-1 bg-[#003049] text-black py-2 rounded font-medium hover:bg-[#00436b] transition-colors text-sm"
         >
           Accept
         </button>
