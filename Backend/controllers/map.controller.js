@@ -4,6 +4,7 @@ import {
   getCaptainsWithin,
   getDistanceAndDuration,
   getLocationSuggestions,
+  getRoute,
 } from "../services/map.service.js";
 import { validationResult } from "express-validator";
 
@@ -81,9 +82,20 @@ const getNearByCaptains = async (req, res) => {
   }
 };
 
+const getRouteController = async (req, res) => {
+  try {
+    const { start, end } = req.body;
+    const route = await getRoute({ start, end });
+    res.status(200).json({ route });
+  } catch (error) {
+    res.status(500).json({ message: error.message || "Internal Server Error" });
+  }
+};
+
 export {
   getCoordinates,
   getDistanceAndTime,
   getSuggestions,
+  getRouteController,
   getNearByCaptains,
 };

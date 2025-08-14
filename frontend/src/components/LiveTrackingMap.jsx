@@ -27,7 +27,7 @@ const createIcon = (color, svgPath) =>
          </div>`,
     className: "",
     iconSize: [32, 32],
-    iconAnchor: [16, 32], // Anchor point at the bottom center
+    iconAnchor: [16, 32],
   });
 
 const icons = {
@@ -147,10 +147,12 @@ const LiveTrackingMap = ({
               <Popup>Destination</Popup>
             </Marker>
           )}
-          {captainLocation && destinationCoords && (
+          {/* ** THE FIX IS HERE ** */}
+          {/* This now correctly draws the line from the pickup point to the destination, not from the captain's moving location. */}
+          {pickupCoords && destinationCoords && (
             <Polyline
               positions={[
-                [captainLocation.lat, captainLocation.lng],
+                [pickupCoords.lat, pickupCoords.lng],
                 [destinationCoords.lat, destinationCoords.lng],
               ]}
               color="#22c55e"

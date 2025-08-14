@@ -1,76 +1,103 @@
-// This utility simulates a captain's movement for testing purposes.
+import axios from "axios";
 
 let simulationInterval = null;
-let route = [];
+let currentRoute = [];
 let currentIndex = 0;
 let onStepCallback = null;
 let onFinishCallback = null;
+let onArrivalAtPickupCallback = null;
 
-/**
- * Generates a series of coordinates between a start and end point.
- * @param {object} start - { lat, lng }
- * @param {object} end - { lat, lng }
- *param {number} steps - Number of points to generate.
- * @returns {array} - An array of { lat, lng } objects.
- */
-function generateRoute(start, end, steps = 50) {
-  const routePoints = [];
-  for (let i = 0; i <= steps; i++) {
-    const lat = start.lat + (end.lat - start.lat) * (i / steps);
-    const lng = start.lng + (end.lng - start.lng) * (i / steps);
-    routePoints.push({ lat, lng });
+async function fetchRoute(start, end) {
+  try {
+    console.log("Fetching route for simulation from", start, "to", end);
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASE_URL}/maps/get-route`,
+      {
+        start: { latitude: start.lat, longitude: start.lng },
+        end: { latitude: end.lat, longitude: end.lng },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    return response.data.route;
+  } catch (error) {
+    console.error("Error fetching route for simulation:", error);
+    return [];
   }
-  return routePoints;
 }
 
-/**
- * Starts the simulation along a generated route.
- * @param {object} startCoords - The starting coordinates {lat, lng}.
- * @param {object} endCoords - The ending coordinates {lat, lng}.
- * @param {function} onStep - Callback function executed on each step with the new location.
- * @param {function} onFinish - Callback function executed when the route is complete.
- * @param {number} speed - Interval speed in milliseconds.
- */
-export function startSimulation(
-  startCoords,
-  endCoords,
+function step() {
+  if (currentIndex < currentRoute.length) {
+    const currentLocation = currentRoute[currentIndex];
+    if (onStepCallback) {
+      onStepCallback(currentLocation);
+    }
+    currentIndex++;
+  } else {
+    clearInterval(simulationInterval);
+    simulationInterval = null;
+    if (onArrivalAtPickupCallback) {
+      const callback = onArrivalAtPickupCallback;
+      onArrivalAtPickupCallback = null;
+      callback();
+    } else if (onFinishCallback) {
+      onFinishCallback();
+    }
+  }
+}
+
+export async function startSimulation(
+  captainStart,
+  pickup,
+  onStep,
+  onArrivalAtPickup,
+  speed = 1000
+) {
+  stopSimulation();
+  onStepCallback = onStep;
+  onArrivalAtPickupCallback = onArrivalAtPickup;
+
+  currentRoute = await fetchRoute(captainStart, pickup);
+  currentIndex = 0;
+  if (currentRoute.length > 0) {
+    simulationInterval = setInterval(step, speed);
+  } else {
+    console.error("Could not fetch route from Captain to Pickup.");
+  }
+}
+
+export async function continueSimulation(
+  pickup,
+  destination,
   onStep,
   onFinish,
-  speed = 2000
+  speed = 1000
 ) {
-  stopSimulation(); // Ensure any existing simulation is stopped
-
-  route = generateRoute(startCoords, endCoords);
-  currentIndex = 0;
+  stopSimulation();
   onStepCallback = onStep;
   onFinishCallback = onFinish;
 
-  simulationInterval = setInterval(() => {
-    if (currentIndex < route.length) {
-      const currentLocation = route[currentIndex];
-      if (onStepCallback) {
-        onStepCallback(currentLocation);
-      }
-      currentIndex++;
-    } else {
-      stopSimulation();
-      if (onFinishCallback) {
-        onFinishCallback();
-      }
-    }
-  }, speed);
+  currentRoute = await fetchRoute(pickup, destination);
+  currentIndex = 0;
+  if (currentRoute.length > 0) {
+    simulationInterval = setInterval(step, speed);
+  } else {
+    console.error("Could not fetch route from Pickup to Destination.");
+    if (onFinish) onFinish();
+  }
 }
 
-/**
- * Stops the current simulation.
- */
 export function stopSimulation() {
   if (simulationInterval) {
     clearInterval(simulationInterval);
     simulationInterval = null;
   }
-  route = [];
+  currentRoute = [];
   currentIndex = 0;
   onStepCallback = null;
   onFinishCallback = null;
+  onArrivalAtPickupCallback = null;
 }
