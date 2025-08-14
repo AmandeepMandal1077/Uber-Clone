@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -19,7 +19,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
 });
 
-// Custom Icons with SVGs
+// Custom Icons for better visibility
 const createIcon = (color, svgPath) =>
   L.divIcon({
     html: `<div style="background-color: ${color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.5);">
@@ -49,19 +49,23 @@ const icons = {
   ),
 };
 
-const MapUpdater = ({ positions }) => {
+const MapUpdater = ({ positions, routePolyline }) => {
   const map = useMap();
   useEffect(() => {
-    if (positions && positions.length > 0) {
-      const validPositions = positions.filter((p) => p && p.lat && p.lng);
-      if (validPositions.length > 0) {
-        const bounds = L.latLngBounds(
-          validPositions.map((p) => [p.lat, p.lng])
-        );
-        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
-      }
+    const allPoints = [...positions];
+    if (routePolyline && Array.isArray(routePolyline)) {
+      routePolyline.forEach((p) => allPoints.push({ lat: p[0], lng: p[1] }));
     }
-  }, [map, positions]);
+
+    const validPositions = allPoints.filter(
+      (p) => p && typeof p.lat === "number" && typeof p.lng === "number"
+    );
+
+    if (validPositions.length > 0) {
+      const bounds = L.latLngBounds(validPositions.map((p) => [p.lat, p.lng]));
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+    }
+  }, [map, positions, routePolyline]);
   return null;
 };
 
@@ -71,6 +75,7 @@ const LiveTrackingMap = ({
   userLocation,
   pickupCoords,
   destinationCoords,
+  route,
 }) => {
   const positionsToBound = [
     captainLocation,
@@ -79,6 +84,8 @@ const LiveTrackingMap = ({
     destinationCoords,
   ].filter(Boolean);
 
+  const routeColor = rideState === "ongoing" ? "red" : "blue";
+
   return (
     <MapContainer
       center={[28.6139, 77.209]}
@@ -86,79 +93,45 @@ const LiveTrackingMap = ({
       style={{ height: "100%", width: "100%" }}
     >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <MapUpdater positions={positionsToBound} />
+      <MapUpdater positions={positionsToBound} routePolyline={route} />
 
-      {/* Stage 1: Captain moving to Pickup */}
-      {rideState === "confirmed" && (
-        <>
-          {captainLocation && (
-            <Marker
-              position={[captainLocation.lat, captainLocation.lng]}
-              icon={icons.captain}
-            >
-              <Popup>Captain</Popup>
-            </Marker>
-          )}
-          {userLocation && (
-            <Marker
-              position={[userLocation.lat, userLocation.lng]}
-              icon={icons.user}
-            >
-              <Popup>You</Popup>
-            </Marker>
-          )}
-          {pickupCoords && (
-            <Marker
-              position={[pickupCoords.lat, pickupCoords.lng]}
-              icon={icons.pickup}
-            >
-              <Popup>Pickup Point</Popup>
-            </Marker>
-          )}
-          {captainLocation && pickupCoords && (
-            <Polyline
-              positions={[
-                [captainLocation.lat, captainLocation.lng],
-                [pickupCoords.lat, pickupCoords.lng],
-              ]}
-              color="#3b82f6"
-              dashArray="10, 10"
-            />
-          )}
-        </>
+      {/* Markers */}
+      {captainLocation && (
+        <Marker
+          position={[captainLocation.lat, captainLocation.lng]}
+          icon={icons.captain}
+        >
+          <Popup>Captain</Popup>
+        </Marker>
+      )}
+      {userLocation && (
+        <Marker
+          position={[userLocation.lat, userLocation.lng]}
+          icon={icons.user}
+        >
+          <Popup>You</Popup>
+        </Marker>
+      )}
+      {pickupCoords && (
+        <Marker
+          position={[pickupCoords.lat, pickupCoords.lng]}
+          icon={icons.pickup}
+        >
+          <Popup>Pickup</Popup>
+        </Marker>
+      )}
+      {destinationCoords && (
+        <Marker
+          position={[destinationCoords.lat, destinationCoords.lng]}
+          icon={icons.destination}
+        >
+          <Popup>Destination</Popup>
+        </Marker>
       )}
 
-      {/* Stage 2: Ride in Progress to Destination */}
-      {rideState === "ongoing" && (
-        <>
-          {captainLocation && (
-            <Marker
-              position={[captainLocation.lat, captainLocation.lng]}
-              icon={icons.captain}
-            >
-              <Popup>Your Ride</Popup>
-            </Marker>
-          )}
-          {destinationCoords && (
-            <Marker
-              position={[destinationCoords.lat, destinationCoords.lng]}
-              icon={icons.destination}
-            >
-              <Popup>Destination</Popup>
-            </Marker>
-          )}
-          {/* ** THE FIX IS HERE ** */}
-          {/* This now correctly draws the line from the pickup point to the destination, not from the captain's moving location. */}
-          {pickupCoords && destinationCoords && (
-            <Polyline
-              positions={[
-                [pickupCoords.lat, pickupCoords.lng],
-                [destinationCoords.lat, destinationCoords.lng],
-              ]}
-              color="#22c55e"
-            />
-          )}
-        </>
+      {/* Route Polyline */}
+      {route && route.length > 0 && (
+        <Polyline positions={route} color={routeColor} weight={5} />
       )}
     </MapContainer>
   );

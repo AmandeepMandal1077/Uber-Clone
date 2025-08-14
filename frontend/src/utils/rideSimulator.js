@@ -9,7 +9,6 @@ let onArrivalAtPickupCallback = null;
 
 async function fetchRoute(start, end) {
   try {
-    console.log("Fetching route for simulation from", start, "to", end);
     const response = await axios.post(
       `${import.meta.env.VITE_BASE_URL}/maps/get-route`,
       {
@@ -33,7 +32,9 @@ function step() {
   if (currentIndex < currentRoute.length) {
     const currentLocation = currentRoute[currentIndex];
     if (onStepCallback) {
-      onStepCallback(currentLocation);
+      // Pass the current location and the remainder of the route
+      const remainingRoute = currentRoute.slice(currentIndex);
+      onStepCallback(currentLocation, remainingRoute);
     }
     currentIndex++;
   } else {
@@ -62,6 +63,7 @@ export async function startSimulation(
 
   currentRoute = await fetchRoute(captainStart, pickup);
   currentIndex = 0;
+
   if (currentRoute.length > 0) {
     simulationInterval = setInterval(step, speed);
   } else {
@@ -82,6 +84,7 @@ export async function continueSimulation(
 
   currentRoute = await fetchRoute(pickup, destination);
   currentIndex = 0;
+
   if (currentRoute.length > 0) {
     simulationInterval = setInterval(step, speed);
   } else {

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { CaptainContext } from "../context/CaptainContext";
 import { SocketContext } from "../context/SocketContext";
@@ -14,6 +14,7 @@ import {
 } from "../utils/rideSimulator";
 import axios from "axios";
 import { LOCATION_CONFIG } from "../config/locationConfig";
+import L from "leaflet"; // Import Leaflet for distance calculation
 
 const getCoordinatesFromAddress = async (address) => {
   try {
@@ -37,6 +38,11 @@ function CaptainDashboard() {
   const navigate = useNavigate();
   const [isOnline, setIsOnline] = useState(false);
 
+  // State for the full, unchanging route for the current leg
+  const [fullRoute, setFullRoute] = useState([]);
+  // State for the portion of the route to be displayed
+  const [displayedRoute, setDisplayedRoute] = useState([]);
+
   const useRealLocation = isOnline && LOCATION_CONFIG.USE_REAL_LOCATION;
   const { currentLocation: realCaptainLocation } = useRealTimeLocation(
     captain?._id,
@@ -57,7 +63,7 @@ function CaptainDashboard() {
     ? realCaptainLocation
     : simulatedCaptainLocation || LOCATION_CONFIG.DEMO_LOCATIONS.captain;
 
-  const resetToHome = () => {
+  const resetToHome = useCallback(() => {
     stopSimulation();
     setCurrentRide(null);
     setRideStarted(false);
@@ -66,8 +72,10 @@ function CaptainDashboard() {
     setPickupCoords(null);
     setDestinationCoords(null);
     setSimulatedCaptainLocation(null);
+    setFullRoute([]);
+    setDisplayedRoute([]);
     navigate("/captain-dashboard");
-  };
+  }, [navigate]);
 
   useEffect(() => {
     if (captain?._id && isOnline) {
@@ -85,6 +93,38 @@ function CaptainDashboard() {
       return () => cleanup();
     }
   }, [isOnline, receiveMessage]);
+
+  // Effect to update the displayed route based on captain's movement
+  useEffect(() => {
+    if (captainLocation && fullRoute && fullRoute.length > 0) {
+      const captainLatLng = L.latLng(captainLocation.lat, captainLocation.lng);
+
+      let closestPointIndex = 0;
+      let minDistance = Infinity;
+
+      fullRoute.forEach((point, index) => {
+        // **FIX:** Ensure the point is a valid array with two numbers before using it.
+        if (Array.isArray(point) && point.length >= 2) {
+          const pointLatLng = L.latLng(point[0], point[1]);
+          const distance = captainLatLng.distanceTo(pointLatLng);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestPointIndex = index;
+          }
+        }
+      });
+
+      const remainingRoute = fullRoute.slice(closestPointIndex);
+      setDisplayedRoute(remainingRoute);
+
+      sendMessage("update-location", {
+        userId: captain._id,
+        location: captainLocation,
+        userType: "captain",
+        route: remainingRoute,
+      });
+    }
+  }, [captainLocation, fullRoute, captain?._id, sendMessage]);
 
   const toggleOnlineStatus = () => {
     setIsOnline((prev) => {
@@ -112,29 +152,52 @@ function CaptainDashboard() {
       setPickupCoords(pickup);
       setDestinationCoords(destination);
 
-      if (!LOCATION_CONFIG.USE_REAL_LOCATION && pickup) {
-        startSimulation(
-          captainLocation,
-          pickup,
-          (newLoc) => {
-            setSimulatedCaptainLocation(newLoc);
-            sendMessage("update-location", {
-              userId: captain._id,
-              location: newLoc,
-              userType: "captain",
-            });
+      if (pickup && captainLocation) {
+        const routeResponse = await axios.post(
+          `${import.meta.env.VITE_BASE_URL}/maps/get-route`,
+          {
+            start: {
+              latitude: captainLocation.lat,
+              longitude: captainLocation.lng,
+            },
+            end: { latitude: pickup.lat, longitude: pickup.lng },
           },
-          () => {
-            alert("Simulation: Arrived at pickup location. Please verify OTP.");
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
           }
         );
+        setFullRoute(routeResponse.data.route);
+
+        if (!LOCATION_CONFIG.USE_REAL_LOCATION) {
+          startSimulation(
+            captainLocation,
+            pickup,
+            (newLoc, remainingRoute) => {
+              setSimulatedCaptainLocation(newLoc);
+              setDisplayedRoute(remainingRoute);
+              sendMessage("update-location", {
+                userId: captain._id,
+                location: newLoc,
+                userType: "captain",
+                route: remainingRoute,
+              });
+            },
+            () => {
+              alert(
+                "Simulation: Arrived at pickup location. Please verify OTP."
+              );
+            }
+          );
+        }
       }
     } catch (error) {
       console.error("Failed to accept ride:", error);
     }
   };
 
-  const handleVerifyOtp = (enteredOtp) => {
+  const handleVerifyOtp = async (enteredOtp) => {
     if (enteredOtp === currentRide.otp && pickupCoords && destinationCoords) {
       setRideStarted(true);
       sendMessage("ride-status-update", {
@@ -142,16 +205,35 @@ function CaptainDashboard() {
         status: "ongoing",
       });
 
+      const routeResponse = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/maps/get-route`,
+        {
+          start: { latitude: pickupCoords.lat, longitude: pickupCoords.lng },
+          end: {
+            latitude: destinationCoords.lat,
+            longitude: destinationCoords.lng,
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setFullRoute(routeResponse.data.route);
+
       if (!LOCATION_CONFIG.USE_REAL_LOCATION) {
         continueSimulation(
           pickupCoords,
           destinationCoords,
-          (newLoc) => {
+          (newLoc, remainingRoute) => {
             setSimulatedCaptainLocation(newLoc);
+            setDisplayedRoute(remainingRoute);
             sendMessage("update-location", {
               userId: captain._id,
               location: newLoc,
               userType: "captain",
+              route: remainingRoute,
             });
           },
           handleCompleteRide
@@ -176,7 +258,7 @@ function CaptainDashboard() {
     resetToHome();
   };
 
-  const startRideSimulationFromDebug = async ({ captainStart, from, to }) => {
+  const startRideSimulationFromDebug = async ({ from, to }) => {
     const fromCoords = await getCoordinatesFromAddress(from);
     const toCoords = await getCoordinatesFromAddress(to);
 
@@ -196,17 +278,18 @@ function CaptainDashboard() {
     setCurrentRide(mockRide);
     setPickupCoords(fromCoords);
     setDestinationCoords(toCoords);
-    setSimulatedCaptainLocation(captainStart);
 
     startSimulation(
-      captainStart,
+      captainLocation,
       fromCoords,
-      (newLoc) => {
+      (newLoc, remainingRoute) => {
         setSimulatedCaptainLocation(newLoc);
+        setDisplayedRoute(remainingRoute);
         sendMessage("update-location", {
           userId: captain._id,
           location: newLoc,
           userType: "captain",
+          route: remainingRoute,
         });
       },
       () => {
@@ -227,6 +310,7 @@ function CaptainDashboard() {
           userLocation={userLocation}
           pickupCoords={pickupCoords}
           destinationCoords={destinationCoords}
+          route={displayedRoute}
         />
       </div>
       <div className="absolute top-0 left-0 p-4 z-10 w-full md:w-96 md:h-full">
