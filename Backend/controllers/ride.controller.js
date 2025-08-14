@@ -11,6 +11,7 @@ import {
 import { validationResult } from "express-validator";
 import { sendMessage } from "../socket.js";
 import RIDE from "../models/ride.model.js";
+import USER from "../models/user.model.js";
 
 const createRideController = async (req, res) => {
   const errors = validationResult(req);
@@ -27,32 +28,28 @@ const createRideController = async (req, res) => {
     });
 
     const pickupLocation = await getAddressCoordinates({ address: pickup });
-
-    //need check if working properly
     const captains = await getCaptainsWithin({
       latitude: pickupLocation.latitude,
       longitude: pickupLocation.longitude,
       radius: 20000000,
     });
 
-    console.log("\n\nTotal Captains: ", captains.length);
     const rideWithUser = await RIDE.findById(ride._id)
       .populate("user")
       .select("+otp");
-    captains.map((captain) => {
-      sendMessage(captain.socketId, { event: "new-ride", data: rideWithUser });
+
+    captains.forEach((captain) => {
+      if (captain.socketId) {
+        sendMessage(captain.socketId, {
+          event: "new-ride",
+          data: rideWithUser,
+        });
+      }
     });
 
-    // Clear OTP from response to user (for security)
-    ride.otp = undefined;
-
-    // console.log("captains: ", captains);
-
-    // Send response only after all operations are complete
     res.status(201).json(ride);
   } catch (error) {
-    console.error("Error in createRideController:", error);
-    res.status(500).json({ message: error.message || "Internal Server Error" });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -61,20 +58,17 @@ const getFare = async (req, res) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-
   try {
     const { pickup, destination } = req.query;
     const fare = await calculateFare({ pickup, destination });
     res.status(200).json(fare);
   } catch (error) {
-    console.error("Error fetching fare:", error);
-    res.status(500).json({ message: error.message || "Internal Server Error" });
+    res.status(500).json({ message: error.message });
   }
 };
 
 const genOTP = async (req, res) => {
   try {
-    // Find the user's current ride (most recent ride that's not completed)
     const userRide = await RIDE.findOne({
       user: req.user._id,
       status: { $in: ["pending", "confirmed"] },
@@ -85,10 +79,9 @@ const genOTP = async (req, res) => {
     if (!userRide) {
       return res.status(404).json({ message: "No active ride found" });
     }
-
     res.status(200).json({ otp: userRide.otp });
   } catch (error) {
-    res.status(500).json({ message: error.message || "Internal Server Error" });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -97,25 +90,42 @@ const confirmRide = async (req, res) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-
   try {
     const { rideId, captainId } = req.body;
-
     const ride = await confirmRideByCaptain({ rideId, captainId });
-
-    // Populate user data to get socketId
     const rideWithUser = await RIDE.findById(ride._id).populate("user");
 
-    sendMessage(rideWithUser.user.socketId, {
-      event: "ride-confirmed",
-      data: ride,
-    });
+    if (rideWithUser.user && rideWithUser.user.socketId) {
+      sendMessage(rideWithUser.user.socketId, {
+        event: "ride-confirmed",
+        data: ride,
+      });
+    }
 
     res.status(200).json({ message: "Ride confirmed successfully", ride });
   } catch (error) {
-    console.error("Error confirming ride:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getRideOTP = async (req, res) => {
+  try {
+    const { rideId } = req.params;
+    const ride = await RIDE.findOne({
+      _id: rideId,
+      user: req.user._id,
+    }).select("+otp");
+
+    if (!ride) {
+      return res
+        .status(404)
+        .json({ message: "Active ride not found for this user." });
+    }
+
+    res.status(200).json({ otp: ride.otp });
+  } catch (error) {
     res.status(500).json({ message: error.message || "Internal Server Error" });
   }
 };
 
-export { createRideController, getFare, genOTP, confirmRide };
+export { createRideController, getFare, genOTP, confirmRide, getRideOTP };
