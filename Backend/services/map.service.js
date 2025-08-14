@@ -133,6 +133,7 @@ const getRoute = async ({ start, end }) => {
     )} to ${JSON.stringify(end)}`
   );
   try {
+    await delay(2000); // Enforce a 2-second delay
     const response = await axios.get(
       `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${process.env.OPEN_ROUTE_API_KEY}&start=${start.longitude},${start.latitude}&end=${end.longitude},${end.latitude}`
     );
@@ -146,12 +147,10 @@ const getRoute = async ({ start, end }) => {
       lng: coord[0],
     }));
   } catch (error) {
-    console.error(
-      "Error fetching route from OpenRouteService, will retry in 1000ms:",
-      error.message
-    );
-    await delay(1000);
-    return getRoute({ start, end }); // Retry logic
+    console.error("Error fetching route from OpenRouteService:", error.message);
+    // Removed the retry logic to prevent accidental infinite loops.
+    // You can add a more robust retry mechanism if needed.
+    throw new Error("Failed to fetch route from OpenRouteService.");
   }
 };
 
