@@ -86,7 +86,7 @@ const RideSelectionPage = ({
 
       {/* Ride Options */}
       <div className="flex-1 p-3 md:p-4 space-y-3 overflow-y-auto">
-        {rideOptions.map((ride) => (
+        {rideOptions?.map((ride) => (
           <div
             key={ride.id}
             onClick={() => onRideSelect(ride)}

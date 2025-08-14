@@ -1,5 +1,5 @@
 // Configuration for location tracking
-export const LOCATION_CONFIG = {
+export let LOCATION_CONFIG = {
   // Set to false for testing with dummy data, true for real GPS location
   USE_REAL_LOCATION: true,
 
@@ -8,12 +8,10 @@ export const LOCATION_CONFIG = {
     captain: {
       lat: 28.6139,
       lng: 77.209,
-      name: "Delhi, India",
     },
     user: {
       lat: 28.6129,
       lng: 77.208,
-      name: "Near Delhi, India",
     },
   },
 
@@ -25,13 +23,14 @@ export const LOCATION_CONFIG = {
   },
 
   // Demo update frequency (for testing mode)
-  DEMO_UPDATE_INTERVAL: 3000, // 3 seconds - reduced frequency
+  DEMO_UPDATE_INTERVAL: 3000, // 3 seconds
 
   // Real location update frequency
   REAL_UPDATE_INTERVAL: 3000, // 3 seconds
 };
 
 // Helper function to toggle between real and demo location for development
+// This now directly mutates the config object.
 export const toggleLocationMode = () => {
   LOCATION_CONFIG.USE_REAL_LOCATION = !LOCATION_CONFIG.USE_REAL_LOCATION;
   console.log(
@@ -39,13 +38,14 @@ export const toggleLocationMode = () => {
       LOCATION_CONFIG.USE_REAL_LOCATION ? "REAL" : "DEMO"
     }`
   );
+  // We will rely on component state updates to re-render, not a page reload.
   return LOCATION_CONFIG.USE_REAL_LOCATION;
 };
 
 // Helper function to set custom demo locations
-export const setDemoLocation = (userType, lat, lng, name = "") => {
-  LOCATION_CONFIG.DEMO_LOCATIONS[userType] = { lat, lng, name };
-  console.log(`Demo location for ${userType} set to:`, { lat, lng, name });
+export const setDemoLocation = (userType, lat, lng) => {
+  if (LOCATION_CONFIG.DEMO_LOCATIONS[userType]) {
+    LOCATION_CONFIG.DEMO_LOCATIONS[userType] = { lat, lng };
+    console.log(`Demo location for ${userType} set to:`, { lat, lng });
+  }
 };
-
-export default LOCATION_CONFIG;

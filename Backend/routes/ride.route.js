@@ -1,5 +1,5 @@
 import Router from "express";
-import { body, query } from "express-validator";
+import { body, query, param } from "express-validator";
 import {
   authenticateCaptain,
   authenticateUser,
@@ -7,7 +7,7 @@ import {
 import {
   confirmRide,
   createRideController,
-  genOTP,
+  getRideOTP, // <-- Import the new controller
   getFare,
 } from "../controllers/ride.controller.js";
 
@@ -45,7 +45,13 @@ router.get(
   getFare
 );
 
-router.get("/gen-otp", authenticateUser, genOTP);
+// New route to get OTP for a specific ride
+router.get(
+  "/get-otp/:rideId",
+  authenticateUser,
+  param("rideId").isMongoId().withMessage("Valid Ride ID is required"),
+  getRideOTP
+);
 
 router.post(
   "/confirm-ride",
