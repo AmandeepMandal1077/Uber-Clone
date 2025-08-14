@@ -75,7 +75,7 @@ function CaptainDashboard() {
     setFullRoute([]);
     setDisplayedRoute([]);
     navigate("/captain-dashboard");
-  }, [navigate]);
+  }, [navigate, setCurrentRide]);
 
   useEffect(() => {
     if (captain?._id && isOnline) {
@@ -103,28 +103,33 @@ function CaptainDashboard() {
       let minDistance = Infinity;
 
       fullRoute.forEach((point, index) => {
-        // **FIX:** Ensure the point is a valid array with two numbers before using it.
-        if (Array.isArray(point) && point.length >= 2) {
-          const pointLatLng = L.latLng(point[0], point[1]);
-          const distance = captainLatLng.distanceTo(pointLatLng);
-          if (distance < minDistance) {
-            minDistance = distance;
-            closestPointIndex = index;
-          }
+        const pointLatLng = L.latLng(point.lat, point.lng);
+        const distance = captainLatLng.distanceTo(pointLatLng);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestPointIndex = index;
         }
       });
 
-      const remainingRoute = fullRoute.slice(closestPointIndex);
-      setDisplayedRoute(remainingRoute);
+      // If the captain is too far from the route, recalculate
+      if (minDistance > 200) {
+        // 200 meters threshold
+        // You can add logic here to refetch the route if needed
+        console.log("Captain is off-route, recalculating...");
+        // handleAcceptRide(currentRide); // This might cause a loop, be careful
+      } else {
+        const remainingRoute = fullRoute.slice(closestPointIndex);
+        setDisplayedRoute(remainingRoute);
 
-      sendMessage("update-location", {
-        userId: captain._id,
-        location: captainLocation,
-        userType: "captain",
-        route: remainingRoute,
-      });
+        sendMessage("update-location", {
+          userId: captain._id,
+          location: captainLocation,
+          userType: "captain",
+          route: remainingRoute,
+        });
+      }
     }
-  }, [captainLocation, fullRoute, captain?._id, sendMessage]);
+  }, [captainLocation, fullRoute, captain?._id, sendMessage, currentRide]);
 
   const toggleOnlineStatus = () => {
     setIsOnline((prev) => {
