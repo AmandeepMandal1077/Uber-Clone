@@ -8,8 +8,8 @@ import cookieParser from "cookie-parser";
 import { rateLimit } from "express-rate-limit";
 
 const limiter = rateLimit({
-  windowMs: 1000,
-  max: 1,
+  windowMs: 1000, // 1 second
+  max: 10, // Allow 10 requests per second
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: "draft-8",
   legacyHeaders: false,

@@ -10,13 +10,14 @@ const getAddressCoordinates = async ({ address }) => {
     throw new Error("Address is required");
   }
   try {
-    delay(1000);
+    // Adding a delay to avoid hitting rate limits of the Nominatim API
+    await delay(1000);
     const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
       address
     )}`;
     const response = await axios.get(nominatimUrl, {
       headers: {
-        "User-Agent": "Yatra",
+        "User-Agent": "Yatra", // It's good practice to set a User-Agent
       },
     });
     const data = response.data;
@@ -25,8 +26,8 @@ const getAddressCoordinates = async ({ address }) => {
     }
     return { latitude: data[0].lat, longitude: data[0].lon };
   } catch (error) {
-    return { latitude: 72, longitude: 72 };
-    // throw new Error("Failed to fetch coordinates");
+    console.error(`Could not fetch coordinates for ${address}:`, error.message);
+    return null; // Return null to indicate failure
   }
 };
 
@@ -39,12 +40,14 @@ const getDistanceAndDuration = async ({ origin, destination }) => {
     const destinationCoords = await getAddressCoordinates({
       address: destination,
     });
+    if (!originCoords || !destinationCoords) {
+      throw new Error("Could not get coordinates for origin or destination");
+    }
     await delay(1000); // Simulate network delay
     const response = await axios.get(
       `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${process.env.OPEN_ROUTE_API_KEY}&start=${originCoords.longitude},${originCoords.latitude}&end=${destinationCoords.longitude},${destinationCoords.latitude}`
     );
     const data = response.data;
-    // console.log(JSON.stringify(data, null, 2));
     if (!data || !data.features || data.features.length === 0) {
       throw new Error("Unable to get distance and duration");
     }
@@ -123,9 +126,39 @@ const getCaptainsWithin = async ({ latitude, longitude, radius }) => {
   }
 };
 
+const getRoute = async ({ start, end }) => {
+  console.log(
+    `Calling OpenRouteService API for route from ${JSON.stringify(
+      start
+    )} to ${JSON.stringify(end)}`
+  );
+  try {
+    const response = await axios.get(
+      `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${process.env.OPEN_ROUTE_API_KEY}&start=${start.longitude},${start.latitude}&end=${end.longitude},${end.latitude}`
+    );
+    const data = response.data;
+    if (!data || !data.features || data.features.length === 0) {
+      throw new Error("Unable to get route from OpenRouteService");
+    }
+    // Transform coordinates to {lat, lng} format
+    return data.features[0].geometry.coordinates.map((coord) => ({
+      lat: coord[1],
+      lng: coord[0],
+    }));
+  } catch (error) {
+    console.error(
+      "Error fetching route from OpenRouteService, will retry in 1000ms:",
+      error.message
+    );
+    await delay(1000);
+    return getRoute({ start, end }); // Retry logic
+  }
+};
+
 export {
   getAddressCoordinates,
   getDistanceAndDuration,
   getLocationSuggestions,
   getCaptainsWithin,
+  getRoute,
 };
