@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { LOCATION_CONFIG } from "../config/locationConfig";
+import { SocketContext } from "../context/SocketContext";
 
 const useRealTimeLocation = (
   userId,
@@ -7,6 +8,7 @@ const useRealTimeLocation = (
   isActive = true,
   onLocationUpdate // Callback function for location updates
 ) => {
+  const { sendLocationUpdate } = useContext(SocketContext);
   const [locationError, setLocationError] = useState(null);
   const lastUpdateRef = useRef(0);
 
@@ -39,6 +41,7 @@ const useRealTimeLocation = (
           if (onLocationUpdate) {
             onLocationUpdate(newLocation);
           }
+          sendLocationUpdate(userId, newLocation, userType);
         };
 
         const errorCallback = (error) =>
@@ -79,6 +82,7 @@ const useRealTimeLocation = (
           if (onLocationUpdate) {
             onLocationUpdate(newDemoLocation);
           }
+          sendLocationUpdate(userId, newDemoLocation, userType);
         }, LOCATION_CONFIG.DEMO_UPDATE_INTERVAL);
       }
     };
@@ -89,7 +93,7 @@ const useRealTimeLocation = (
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       if (demoInterval !== null) clearInterval(demoInterval);
     };
-  }, [userId, userType, isActive, onLocationUpdate]);
+  }, [userId, userType, isActive, onLocationUpdate, sendLocationUpdate]);
 
   return { locationError };
 };
