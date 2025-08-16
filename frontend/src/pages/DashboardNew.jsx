@@ -70,15 +70,27 @@ const Dashboard = () => {
   const [otp, setOtp] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
-  const { currentLocation: userLocation } = useRealTimeLocation(
-    user?._id,
-    "user",
-    true
-  );
-
+  const [userLocation, setUserLocation] = useState(null);
   const [captainLocation, setCaptainLocation] = useState(null);
   const [pickupCoords, setPickupCoords] = useState(null);
   const [destinationCoords, setDestinationCoords] = useState(null);
+
+  // Centralized location update handler
+  const handleLocationUpdate = useCallback(
+    (newLocation) => {
+      setUserLocation(newLocation);
+      if (user?._id) {
+        sendMessage("update-location", {
+          userId: user._id,
+          location: newLocation,
+          userType: "user",
+        });
+      }
+    },
+    [user?._id, sendMessage]
+  );
+
+  useRealTimeLocation(user?._id, "user", true, handleLocationUpdate);
 
   useEffect(() => {
     const initializeState = async () => {
@@ -92,47 +104,52 @@ const Dashboard = () => {
           }
         );
 
-        if (!response) {
+        if (!response.data) {
+          setIsInitializing(false);
           return;
         }
 
-        console.log("persistant response: ", response);
         const ride = response.data;
-        console.log("ride info: ", ride);
 
-        if (ride.status == "completed" || ride.status == "cancelled") {
+        if (ride.status === "completed" || ride.status === "cancelled") {
+          setIsInitializing(false);
           return;
         }
 
-        const rideCreatedAt = new Date(ride.createdAt);
-        const now = new Date();
-        const timeDiffInMinutes = (now - rideCreatedAt) / (1000 * 60);
+        // Set common ride data first
+        if (ride.pickupLocation && ride.dropoffLocation) {
+          setRouteData({ from: ride.pickupLocation, to: ride.dropoffLocation });
+          const pickup = await getCoordinates(ride.pickupLocation);
+          const dest = await getCoordinates(ride.dropoffLocation);
+          setPickupCoords(pickup);
+          setDestinationCoords(dest);
+        }
 
-        if (timeDiffInMinutes > 30 && ride.status === "pending") {
-          // Auto-cancel old pending rides
-          await axios.patch(
-            `${import.meta.env.VITE_BASE_URL}/rides/update-ride-details`,
-            { status: "cancelled" },
+        // **FIX for flickering**: Check for the most advanced state first.
+        // If the ride is confirmed and has a captain, go directly to OTP display.
+        if (
+          ride.captain &&
+          (ride.status === "confirmed" ||
+            ride.status === "payed" ||
+            ride.status === "ongoing")
+        ) {
+          setActiveRide(ride);
+          setRideState(ride.status);
+
+          const otpResponse = await axios.get(
+            `${import.meta.env.VITE_BASE_URL}/rides/get-otp/${ride._id}`,
             {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
               },
             }
           );
-          return; // Don't restore this ride
-        }
 
-        if (ride.pickupLocation && ride.dropoffLocation) {
-          console.log("picking up");
-          setRouteData({ from: ride.pickupLocation, to: ride.dropoffLocation });
+          setOtp(otpResponse.data.otp);
+          setView("otp-display");
 
-          const pickupCoords = await getCoordinates(ride.pickupLocation);
-          const destCoords = await getCoordinates(ride.dropoffLocation);
-          setPickupCoords(pickupCoords);
-          setDestinationCoords(destCoords);
-        }
-
-        if (ride.fare && ride.vehicleType) {
+          // Otherwise, if it has a fare, it means we are at the payment step.
+        } else if (ride.fare && ride.vehicleType) {
           const currentRide = {
             id: ride.vehicleType,
             name:
@@ -142,49 +159,26 @@ const Dashboard = () => {
             vehicleType: ride.vehicleType,
             time: "5 min",
           };
-
-          console.log("current ride: ", currentRide);
           setSelectedRide(currentRide);
           setView("payment");
         }
-
-        if (
-          ride.captain &&
-          (ride.status === "confirmed" || ride.status === "payed")
-        ) {
-          setActiveRide(ride);
-
-          if (ride.status === "ongoing") {
-            setRideState("ongoing");
-          } else if (ride.status === "confirmed" || ride.status === "payed") {
-            setRideState("confirmed");
-          }
-          const response = await axios.get(
-            `${import.meta.env.VITE_BASE_URL}/rides/get-otp/${ride._id}`,
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-            }
-          );
-
-          if (!response || !response.data) {
-            throw new Error("Error fetching otp while initialization");
-          }
-
-          console.log("otp: ", response);
-          setOtp(response.data.otp);
-          setView("otp-display");
-        }
       } catch (error) {
-        console.error("Error initializing from previous data", error);
+        console.error(
+          "No active ride found or error initializing:",
+          error.message
+        );
+        setView("search");
       } finally {
         setIsInitializing(false);
       }
     };
 
-    initializeState();
-  }, []);
+    if (user?._id) {
+      initializeState();
+    } else {
+      setIsInitializing(false);
+    }
+  }, [user?._id]);
 
   const resetToHome = useCallback(() => {
     setView("search");
@@ -208,16 +202,6 @@ const Dashboard = () => {
   useEffect(() => {
     if (isInitializing) return;
 
-    const captainLocation = getCaptainLocation(activeRide?.captain);
-    const details = {
-      activeRide,
-      rideState,
-      userLocation,
-      captainLocation,
-      pickupCoords,
-      destinationCoords,
-    };
-    console.log("receiving details: ", details);
     const cleanupConfirmed = receiveMessage(
       "ride-confirmed",
       async (rideData) => {
@@ -265,8 +249,8 @@ const Dashboard = () => {
   }, [receiveMessage, resetToHome, activeRide, isInitializing]);
 
   useEffect(() => {
-    if (!isInitializing && activeRide && activeRide.captain?._id) {
-      const captainId = activeRide.captain._id;
+    if (!isInitializing && activeRide && activeRide.captain) {
+      const captainId = activeRide.captain._id || activeRide.captain;
       const locationData = liveLocations[captainId];
       if (locationData) {
         setCaptainLocation({ lat: locationData.lat, lng: locationData.lng });
@@ -320,11 +304,6 @@ const Dashboard = () => {
   const handleConfirmRide = async () => {
     setIsLoading(true);
     try {
-      console.log("Creating ride with data:", {
-        pickup: routeData.from,
-        destination: routeData.to,
-        vehicleType: selectedRide.vehicleType,
-      });
       await axios.post(
         `${import.meta.env.VITE_BASE_URL}/rides/create-ride`,
         {
@@ -363,7 +342,6 @@ const Dashboard = () => {
         }
       );
 
-      console.log("Payment response: ", response);
       if (!response || !response.data) {
         throw new Error("Error while paying for ride");
       }
