@@ -1,3 +1,4 @@
+import RIDE from "../models/ride.model.js";
 import USER from "../models/user.model.js";
 
 const createUser = async ({ firstname, lastname, email, password }) => {

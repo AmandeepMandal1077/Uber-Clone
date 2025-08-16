@@ -18,6 +18,11 @@ const LocationSearchPage = ({ onFindRoutes }) => {
   const prevToLocationRef = useRef("");
 
   useEffect(() => {
+    setFromLocation(sessionStorage.getItem("fromLocation") || "");
+    setToLocation(sessionStorage.getItem("toLocation") || "");
+  }, []);
+
+  useEffect(() => {
     let delayTimeout;
 
     const fetchFromSuggestions = async () => {
@@ -143,12 +148,14 @@ const LocationSearchPage = ({ onFindRoutes }) => {
   const handleLocationSelect = (suggestion, type) => {
     if (type === "from") {
       // Update both state and ref to prevent redundant API call
+      sessionStorage.setItem("fromLocation", suggestion.name);
       setFromLocation(suggestion.name);
       prevFromLocationRef.current = suggestion.name;
       setFromSuggestions([]);
       setShowFromDropdown(false);
     } else {
       // Update both state and ref to prevent redundant API call
+      sessionStorage.setItem("toLocation", suggestion.name);
       setToLocation(suggestion.name);
       prevToLocationRef.current = suggestion.name;
       setToSuggestions([]);
@@ -188,6 +195,7 @@ const LocationSearchPage = ({ onFindRoutes }) => {
                     setShowFromDropdown(false);
                   }
 
+                  sessionStorage.setItem("fromLocation", newValue);
                   // Store the untrimmed value for display purposes, but use trimmed for comparison
                   setFromLocation(newValue);
                 }}
@@ -217,6 +225,7 @@ const LocationSearchPage = ({ onFindRoutes }) => {
                     setShowToDropdown(false);
                   }
 
+                  sessionStorage.setItem("toLocation", newValue);
                   // Store the untrimmed value for display purposes, but use trimmed for comparison
                   setToLocation(newValue);
                 }}

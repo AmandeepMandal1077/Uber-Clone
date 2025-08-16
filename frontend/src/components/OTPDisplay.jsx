@@ -6,7 +6,7 @@ const OTPDisplay = ({ otp, pickup, destination, activeRide, onBack }) => {
       {/* Header with OTP */}
       <div className="flex-shrink-0 bg-white p-4 shadow-md">
         <div className="text-center">
-          <h3 className="text-lg font-semibold text-[#003049] mb-2">
+          <h3 className="text-lg font-semibold text-[#003049] mb-2 ">
             Driver Found! Share Your OTP
           </h3>
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 inline-block">
@@ -31,17 +31,17 @@ const OTPDisplay = ({ otp, pickup, destination, activeRide, onBack }) => {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Pickup:</span>
-              <span className="font-medium">{pickup}</span>
+              <span className="font-medium text-black">{pickup}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Destination:</span>
-              <span className="font-medium">{destination}</span>
+              <span className="font-medium text-black">{destination}</span>
             </div>
             {activeRide && (
               <>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Driver:</span>
-                  <span className="font-medium">
+                  <span className="font-medium text-black">
                     {activeRide.captain?.fullname?.firstname &&
                     activeRide.captain?.fullname?.lastname
                       ? `${activeRide.captain.fullname.firstname} ${activeRide.captain.fullname.lastname}`
@@ -50,7 +50,7 @@ const OTPDisplay = ({ otp, pickup, destination, activeRide, onBack }) => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Vehicle:</span>
-                  <span className="font-medium">
+                  <span className="font-medium text-black">
                     {activeRide.captain?.vehicle?.vehicleType || "Vehicle"}
                   </span>
                 </div>

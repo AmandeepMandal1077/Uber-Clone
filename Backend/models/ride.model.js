@@ -24,9 +24,20 @@ const rideSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    vehicleType: {
+      type: String,
+      required: true,
+    },
     status: {
       type: String,
-      enum: ["pending", "confirmed", "ongoing", "completed", "cancelled"],
+      enum: [
+        "pending", //user entering details
+        "payed", //user entered details, and is going to pay
+        "confirmed", //user has confirmed the ride
+        "ongoing", //ride is currently ongoing
+        "completed", //ride has been completed
+        "cancelled", //ride has been cancelled
+      ],
       default: "pending",
     },
     paymentId: {

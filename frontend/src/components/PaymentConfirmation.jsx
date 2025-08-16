@@ -19,7 +19,7 @@ const PaymentConfirmation = ({ onConfirmPayment, pickup, destination }) => {
             />
           </svg>
         </div>
-        <h3 className="text-lg md:text-xl font-semibold text-[#003049] mb-2">
+        <h3 className="text-lg md:text-xl font-semibold text-black mb-2">
           Confirm your payment to complete the booking
         </h3>
         <p className="text-gray-600 text-sm md:text-base mb-6">
@@ -31,11 +31,11 @@ const PaymentConfirmation = ({ onConfirmPayment, pickup, destination }) => {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">From:</span>
-              <span className="font-medium">{pickup}</span>
+              <span className="font-medium text-black">{pickup}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">To:</span>
-              <span className="font-medium">{destination}</span>
+              <span className="font-medium text-black">{destination}</span>
             </div>
           </div>
         </div>

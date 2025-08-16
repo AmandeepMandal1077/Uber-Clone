@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 
 const LocationInput = ({
   label,
@@ -11,6 +11,8 @@ const LocationInput = ({
   getLocationIcon,
   dotColor = "#c1121f",
 }) => {
+  const input = useRef(null);
+
   return (
     <div className="relative">
       <label className="block text-black font-medium mb-2">
@@ -23,6 +25,7 @@ const LocationInput = ({
         </span>
       </label>
       <input
+        ref={input}
         type="text"
         value={value || ""}
         onChange={(e) => {
@@ -35,7 +38,9 @@ const LocationInput = ({
       />
 
       {/* Suggestions Dropdown */}
-      {showDropdown &&
+      {input.current &&
+        document.activeElement === input.current &&
+        showDropdown &&
         value &&
         value.trim() !== "" &&
         Array.isArray(suggestions) &&

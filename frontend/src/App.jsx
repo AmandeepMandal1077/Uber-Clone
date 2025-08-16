@@ -13,6 +13,18 @@ import CaptainDashboard from "./pages/CaptainDashboard";
 import CaptainLogout from "./pages/CaptainLogout";
 import CaptainRide from "./pages/CaptainRide"; // Import the new page
 import MapTest from "./components/MapTest";
+import { CheckoutProvider } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import axios from "axios";
+
+const stripePromise = loadStripe(
+  "pk_test_51RvuR2IK5Zv39eeKFH41GluULNWBTHIAhNSpK2B4IQKjKUZlzRvF2SUmzHodEhpEjcqN5nqQKLjsN1HcLvQNr2v000KovsGuFG"
+);
+
+const fetchClientSecret = async () => {
+  const response = await axios.post("/create-checkout-session");
+  return response.data.checkoutSessionClientSecret;
+};
 
 function App() {
   return (

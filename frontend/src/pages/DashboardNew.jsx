@@ -55,9 +55,10 @@ const getCoordinates = async (address) => {
 };
 
 const Dashboard = () => {
-  const { sendMessage, receiveMessage, liveLocations } =
+  const { sendMessage, receiveMessage, liveLocations, getCaptainLocation } =
     useContext(SocketContext);
-  const { user } = useContext(UserContext);
+  const { user, userDashboardData, setUserDashboardData } =
+    useContext(UserContext);
   const navigate = useNavigate();
   const [view, setView] = useState("search");
   const [routeData, setRouteData] = useState(null);
@@ -67,15 +68,123 @@ const Dashboard = () => {
   const [activeRide, setActiveRide] = useState(null);
   const [rideState, setRideState] = useState("waiting");
   const [otp, setOtp] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const { currentLocation: userLocation } = useRealTimeLocation(
     user?._id,
     "user",
     true
   );
+
   const [captainLocation, setCaptainLocation] = useState(null);
   const [pickupCoords, setPickupCoords] = useState(null);
   const [destinationCoords, setDestinationCoords] = useState(null);
+
+  useEffect(() => {
+    const initializeState = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/rides/get-ride-details`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        if (!response) {
+          return;
+        }
+
+        console.log("persistant response: ", response);
+        const ride = response.data;
+        console.log("ride info: ", ride);
+
+        if (ride.status == "completed" || ride.status == "cancelled") {
+          return;
+        }
+
+        const rideCreatedAt = new Date(ride.createdAt);
+        const now = new Date();
+        const timeDiffInMinutes = (now - rideCreatedAt) / (1000 * 60);
+
+        if (timeDiffInMinutes > 30 && ride.status === "pending") {
+          // Auto-cancel old pending rides
+          await axios.patch(
+            `${import.meta.env.VITE_BASE_URL}/rides/update-ride-details`,
+            { status: "cancelled" },
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
+          );
+          return; // Don't restore this ride
+        }
+
+        if (ride.pickupLocation && ride.dropoffLocation) {
+          console.log("picking up");
+          setRouteData({ from: ride.pickupLocation, to: ride.dropoffLocation });
+
+          const pickupCoords = await getCoordinates(ride.pickupLocation);
+          const destCoords = await getCoordinates(ride.dropoffLocation);
+          setPickupCoords(pickupCoords);
+          setDestinationCoords(destCoords);
+        }
+
+        if (ride.fare && ride.vehicleType) {
+          const currentRide = {
+            id: ride.vehicleType,
+            name:
+              ride.vehicleType.charAt(0).toUpperCase() +
+              ride.vehicleType.slice(1),
+            price: `₹${ride.fare}`,
+            vehicleType: ride.vehicleType,
+            time: "5 min",
+          };
+
+          console.log("current ride: ", currentRide);
+          setSelectedRide(currentRide);
+          setView("payment");
+        }
+
+        if (
+          ride.captain &&
+          (ride.status === "confirmed" || ride.status === "payed")
+        ) {
+          setActiveRide(ride);
+
+          if (ride.status === "ongoing") {
+            setRideState("ongoing");
+          } else if (ride.status === "confirmed" || ride.status === "payed") {
+            setRideState("confirmed");
+          }
+          const response = await axios.get(
+            `${import.meta.env.VITE_BASE_URL}/rides/get-otp/${ride._id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
+          );
+
+          if (!response || !response.data) {
+            throw new Error("Error fetching otp while initialization");
+          }
+
+          console.log("otp: ", response);
+          setOtp(response.data.otp);
+          setView("otp-display");
+        }
+      } catch (error) {
+        console.error("Error initializing from previous data", error);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initializeState();
+  }, []);
 
   const resetToHome = useCallback(() => {
     setView("search");
@@ -91,12 +200,24 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (user?._id) {
+    if (user?._id && !isInitializing) {
       sendMessage("join", { userId: user._id, userType: "user" });
     }
-  }, [user?._id, sendMessage]);
+  }, [user?._id, sendMessage, isInitializing]);
 
   useEffect(() => {
+    if (isInitializing) return;
+
+    const captainLocation = getCaptainLocation(activeRide?.captain);
+    const details = {
+      activeRide,
+      rideState,
+      userLocation,
+      captainLocation,
+      pickupCoords,
+      destinationCoords,
+    };
+    console.log("receiving details: ", details);
     const cleanupConfirmed = receiveMessage(
       "ride-confirmed",
       async (rideData) => {
@@ -141,17 +262,28 @@ const Dashboard = () => {
       cleanupCompleted();
       cleanupStatusUpdate();
     };
-  }, [receiveMessage, resetToHome, activeRide]);
+  }, [receiveMessage, resetToHome, activeRide, isInitializing]);
 
   useEffect(() => {
-    if (activeRide && activeRide.captain?._id) {
+    if (!isInitializing && activeRide && activeRide.captain?._id) {
       const captainId = activeRide.captain._id;
       const locationData = liveLocations[captainId];
       if (locationData) {
         setCaptainLocation({ lat: locationData.lat, lng: locationData.lng });
       }
     }
-  }, [liveLocations, activeRide]);
+  }, [liveLocations, activeRide, isInitializing]);
+
+  if (isInitializing) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+          <p className="mt-4 text-white">Initializing...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleFindRoutes = async (routes) => {
     setIsLoading(true);
@@ -185,11 +317,14 @@ const Dashboard = () => {
     setView("ride-confirmation");
   };
 
-  const handleConfirmRide = () => setView("payment");
-
-  const handleConfirmPayment = async () => {
+  const handleConfirmRide = async () => {
     setIsLoading(true);
     try {
+      console.log("Creating ride with data:", {
+        pickup: routeData.from,
+        destination: routeData.to,
+        vehicleType: selectedRide.vehicleType,
+      });
       await axios.post(
         `${import.meta.env.VITE_BASE_URL}/rides/create-ride`,
         {
@@ -201,6 +336,38 @@ const Dashboard = () => {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
+      setView("payment");
+    } catch (error) {
+      setView("payment");
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    setIsLoading(true);
+    try {
+      //integrate stripe here:-
+
+      const rideData = { status: "confirmed" };
+      const response = await axios.patch(
+        `${import.meta.env.VITE_BASE_URL}/rides/update-ride-details`,
+        {
+          rideData,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      console.log("Payment response: ", response);
+      if (!response || !response.data) {
+        throw new Error("Error while paying for ride");
+      }
+      //check for payment confirmation
       setView("searching-driver");
     } catch (err) {
       console.error(err);

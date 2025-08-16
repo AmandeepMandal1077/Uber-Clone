@@ -3,24 +3,26 @@ import {
   getCaptainsWithin,
 } from "../services/map.service.js";
 import {
-  createRide,
+  createRideService,
   calculateFare,
   generateOTP,
   confirmRideByCaptain,
+  updateRideDetailsByUserId,
+  getRideDetailsByUserId,
 } from "../services/ride.service.js";
 import { validationResult } from "express-validator";
 import { sendMessage } from "../socket.js";
 import RIDE from "../models/ride.model.js";
 import USER from "../models/user.model.js";
 
-const createRideController = async (req, res) => {
+const createRide = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
   try {
     const { pickup, destination, vehicleType } = req.body;
-    const ride = await createRide({
+    const ride = await createRideService({
       userId: req.user._id,
       pickup,
       destination,
@@ -128,4 +130,42 @@ const getRideOTP = async (req, res) => {
   }
 };
 
-export { createRideController, getFare, genOTP, confirmRide, getRideOTP };
+const getRideDetails = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  try {
+    const userId = req.user._id;
+    const ride = await getRideDetailsByUserId({ userId });
+    res.status(200).json(ride);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const updateRideDetails = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  try {
+    const { rideData } = req.body;
+    const userId = req.user._id;
+
+    const updatedRide = await updateRideDetailsByUserId({ userId, rideData });
+    res.status(200).json(updatedRide);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export {
+  createRide,
+  getFare,
+  genOTP,
+  confirmRide,
+  getRideOTP,
+  getRideDetails,
+  updateRideDetails,
+};

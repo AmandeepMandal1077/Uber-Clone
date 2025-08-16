@@ -12,6 +12,7 @@ import {
 
 const router = express.Router();
 
+//register
 router.post(
   "/register",
   [
@@ -26,6 +27,7 @@ router.post(
   registerUser
 );
 
+//login
 router.post(
   "/login",
   [
