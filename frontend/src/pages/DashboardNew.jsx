@@ -57,7 +57,7 @@ const getCoordinates = async (address) => {
 const Dashboard = () => {
   const { sendMessage, receiveMessage, liveLocations, getCaptainLocation } =
     useContext(SocketContext);
-  const { user, userDashboardData, setUserDashboardData } =
+  const { user, userDashboardData, setUserDashboardData, loading } =
     useContext(UserContext);
   const navigate = useNavigate();
   const [view, setView] = useState("search");
@@ -68,7 +68,6 @@ const Dashboard = () => {
   const [activeRide, setActiveRide] = useState(null);
   const [rideState, setRideState] = useState("waiting");
   const [otp, setOtp] = useState(null);
-  const [isInitializing, setIsInitializing] = useState(true);
 
   const [userLocation, setUserLocation] = useState(null);
   const [captainLocation, setCaptainLocation] = useState(null);
@@ -76,19 +75,9 @@ const Dashboard = () => {
   const [destinationCoords, setDestinationCoords] = useState(null);
 
   // Centralized location update handler
-  const handleLocationUpdate = useCallback(
-    (newLocation) => {
-      setUserLocation(newLocation);
-      if (user?._id) {
-        sendMessage("update-location", {
-          userId: user._id,
-          location: newLocation,
-          userType: "user",
-        });
-      }
-    },
-    [user?._id, sendMessage]
-  );
+  const handleLocationUpdate = useCallback((newLocation) => {
+    setUserLocation(newLocation);
+  }, []);
 
   useRealTimeLocation(user?._id, "user", true, handleLocationUpdate);
 
@@ -105,14 +94,12 @@ const Dashboard = () => {
         );
 
         if (!response.data) {
-          setIsInitializing(false);
           return;
         }
 
         const ride = response.data;
 
         if (ride.status === "completed" || ride.status === "cancelled") {
-          setIsInitializing(false);
           return;
         }
 
@@ -125,8 +112,6 @@ const Dashboard = () => {
           setDestinationCoords(dest);
         }
 
-        // **FIX for flickering**: Check for the most advanced state first.
-        // If the ride is confirmed and has a captain, go directly to OTP display.
         if (
           ride.captain &&
           (ride.status === "confirmed" ||
@@ -147,8 +132,6 @@ const Dashboard = () => {
 
           setOtp(otpResponse.data.otp);
           setView("otp-display");
-
-          // Otherwise, if it has a fare, it means we are at the payment step.
         } else if (ride.fare && ride.vehicleType) {
           const currentRide = {
             id: ride.vehicleType,
@@ -168,17 +151,13 @@ const Dashboard = () => {
           error.message
         );
         setView("search");
-      } finally {
-        setIsInitializing(false);
       }
     };
 
-    if (user?._id) {
+    if (user?._id && !loading) {
       initializeState();
-    } else {
-      setIsInitializing(false);
     }
-  }, [user?._id]);
+  }, [user?._id, loading]);
 
   const resetToHome = useCallback(() => {
     setView("search");
@@ -194,13 +173,13 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (user?._id && !isInitializing) {
+    if (user?._id && !loading) {
       sendMessage("join", { userId: user._id, userType: "user" });
     }
-  }, [user?._id, sendMessage, isInitializing]);
+  }, [user?._id, sendMessage, loading]);
 
   useEffect(() => {
-    if (isInitializing) return;
+    if (loading) return;
 
     const cleanupConfirmed = receiveMessage(
       "ride-confirmed",
@@ -246,19 +225,19 @@ const Dashboard = () => {
       cleanupCompleted();
       cleanupStatusUpdate();
     };
-  }, [receiveMessage, resetToHome, activeRide, isInitializing]);
+  }, [receiveMessage, resetToHome, activeRide, loading]);
 
   useEffect(() => {
-    if (!isInitializing && activeRide && activeRide.captain) {
+    if (!loading && activeRide && activeRide.captain) {
       const captainId = activeRide.captain._id || activeRide.captain;
       const locationData = liveLocations[captainId];
       if (locationData) {
         setCaptainLocation({ lat: locationData.lat, lng: locationData.lng });
       }
     }
-  }, [liveLocations, activeRide, isInitializing]);
+  }, [liveLocations, activeRide, loading]);
 
-  if (isInitializing) {
+  if (loading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center">
         <div className="text-center">
