@@ -3,38 +3,88 @@ import LiveTrackingMap from "./LiveTrackingMap";
 import { SocketContext } from "../context/SocketContext";
 import { UserContext } from "../context/UserContext";
 import useRealTimeLocation from "../hooks/useRealTimeLocation";
+import { LOCATION_CONFIG } from "../config/locationConfig";
+import axios from "axios";
+
+const getCoordinates = async (address) => {
+  if (!address) return null;
+  try {
+    const { data } = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/maps/get-coordinates`,
+      {
+        params: { address },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      }
+    );
+    return { lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) };
+  } catch (error) {
+    console.error(`Error getting coordinates for ${address}:`, error);
+    return null;
+  }
+};
 
 const ConnectedLiveTrackingMap = ({ className = "h-full w-full" }) => {
   const { socket, liveLocations } = useContext(SocketContext);
   const { user } = useContext(UserContext) || {};
-
-  // Get current user's real-time location
+  const [ride, setRide] = useState(null);
   const { currentLocation, error } = useRealTimeLocation();
+  const [pickupCoords, setPickupCoords] = useState(null);
+  const [destinationCoords, setDestinationCoords] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
+  const [captainLocation, setCaptainLocation] = useState(null);
 
-  // State for ride information
   const [rideState, setRideState] = useState("confirmed");
 
-  // Simple check to determine if current user is captain
   const isCaptain = window.location.pathname.includes("captain");
-  const currentUserId =
-    user?._id || "demo-user-" + Math.random().toString(36).substr(2, 9);
+  const currentUserId = user?._id;
 
-  // Default demo locations for testing
-  const demoUserLocation = { lat: 28.6139, lng: 77.209 };
-  const demoCaptainLocation = { lat: 28.6179, lng: 77.213 };
-  const demoPickupLocation = { lat: 28.6139, lng: 77.209 };
-  const demoDestinationLocation = { lat: 28.6299, lng: 77.2246 };
+  useEffect(() => {
+    const fetchRideDetails = async () => {
+      if (user?._id) {
+        try {
+          const response = await axios.get(
+            `${import.meta.env.VITE_BASE_URL}/rides/get-ride-details`,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
+          );
+          const activeRide = response.data;
+          if (
+            activeRide &&
+            activeRide.status !== "completed" &&
+            activeRide.status !== "cancelled"
+          ) {
+            setRide(activeRide);
+            const pickup = await getCoordinates(activeRide.pickupLocation);
+            const destination = await getCoordinates(
+              activeRide.dropoffLocation
+            );
+            setPickupCoords(pickup);
+            setDestinationCoords(destination);
+            localStorage.setItem("pickupCoords", JSON.stringify(pickup));
+            localStorage.setItem(
+              "destinationCoords",
+              JSON.stringify(destination)
+            );
+          }
+        } catch (error) {
+          console.error("Could not fetch ride details", error);
+        }
+      }
+    };
 
-  // Use real location if available, otherwise use demo locations
-  const userLocation = isCaptain
-    ? demoUserLocation
-    : currentLocation || demoUserLocation;
+    if (LOCATION_CONFIG.USE_REAL_LOCATION) {
+      fetchRideDetails();
+    } else {
+      setPickupCoords(JSON.parse(localStorage.getItem("pickupCoords")));
+      setDestinationCoords(
+        JSON.parse(localStorage.getItem("destinationCoords"))
+      );
+    }
+  }, [user]);
 
-  const captainLocation = isCaptain
-    ? currentLocation || demoCaptainLocation
-    : demoCaptainLocation;
-
-  // Broadcast current location if we have one
   useEffect(() => {
     if (currentLocation && socket && currentUserId) {
       socket.emit("update-location", {
@@ -45,27 +95,24 @@ const ConnectedLiveTrackingMap = ({ className = "h-full w-full" }) => {
     }
   }, [currentLocation, socket, currentUserId, isCaptain]);
 
-  // Get locations from other users if available
-  const otherUserLocation = Object.entries(liveLocations || {}).find(
-    ([id, data]) =>
-      id !== currentUserId && data.userType === (isCaptain ? "user" : "captain")
-  )?.[1];
-
-  // Final locations to pass to map
-  const finalUserLocation = isCaptain
-    ? otherUserLocation || demoUserLocation
-    : currentLocation || demoUserLocation;
-
-  const finalCaptainLocation = isCaptain
-    ? currentLocation || demoCaptainLocation
-    : otherUserLocation || demoCaptainLocation;
+  useEffect(() => {
+    if (LOCATION_CONFIG.USE_REAL_LOCATION) {
+      setUserLocation(liveLocations[user?._id]);
+      if (ride?.captain) {
+        setCaptainLocation(liveLocations[ride.captain]);
+      }
+    } else {
+      setUserLocation(LOCATION_CONFIG.DEMO_LOCATIONS.user);
+      setCaptainLocation(LOCATION_CONFIG.DEMO_LOCATIONS.captain);
+    }
+  }, [liveLocations, user, ride]);
 
   return (
     <LiveTrackingMap
-      userLocation={finalUserLocation}
-      captainLocation={finalCaptainLocation}
-      pickupLocation={demoPickupLocation}
-      destinationLocation={demoDestinationLocation}
+      userLocation={userLocation}
+      captainLocation={captainLocation}
+      pickupCoords={pickupCoords}
+      destinationCoords={destinationCoords}
       rideState={rideState}
       className={className}
     />

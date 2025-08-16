@@ -1,11 +1,13 @@
-import { useState, useEffect, useContext, useRef } from "react";
-import { SocketContext } from "../context/SocketContext";
+import { useState, useEffect, useRef } from "react";
 import { LOCATION_CONFIG } from "../config/locationConfig";
 
-const useRealTimeLocation = (userId, userType, isActive = true) => {
-  const [currentLocation, setCurrentLocation] = useState(null);
+const useRealTimeLocation = (
+  userId,
+  userType,
+  isActive = true,
+  onLocationUpdate // Callback function for location updates
+) => {
   const [locationError, setLocationError] = useState(null);
-  const { sendLocationUpdate } = useContext(SocketContext);
   const lastUpdateRef = useRef(0);
 
   useEffect(() => {
@@ -32,12 +34,16 @@ const useRealTimeLocation = (userId, userType, isActive = true) => {
           lastUpdateRef.current = now;
           const { latitude, longitude } = position.coords;
           const newLocation = { lat: latitude, lng: longitude };
-          setCurrentLocation(newLocation);
-          sendLocationUpdate(userId, newLocation, userType);
+
+          // Use the callback to pass location updates to the parent component
+          if (onLocationUpdate) {
+            onLocationUpdate(newLocation);
+          }
         };
 
         const errorCallback = (error) =>
           setLocationError("Unable to retrieve location.");
+
         watchId = navigator.geolocation.watchPosition(
           successCallback,
           errorCallback,
@@ -48,24 +54,31 @@ const useRealTimeLocation = (userId, userType, isActive = true) => {
         const initialDemoLocation =
           LOCATION_CONFIG.DEMO_LOCATIONS[userType] ||
           LOCATION_CONFIG.DEMO_LOCATIONS.user;
-        setCurrentLocation(initialDemoLocation);
-        sendLocationUpdate(userId, initialDemoLocation, userType);
+
+        if (onLocationUpdate) {
+          onLocationUpdate(initialDemoLocation);
+        }
 
         // Simulate movement for demo purposes
         demoInterval = setInterval(() => {
-          setCurrentLocation((prevLocation) => {
-            const variation = 0.0005; // Smaller, more realistic movement
-            const newDemoLocation = {
-              lat:
-                (prevLocation?.lat || initialDemoLocation.lat) +
-                (Math.random() - 0.5) * variation,
-              lng:
-                (prevLocation?.lng || initialDemoLocation.lng) +
-                (Math.random() - 0.5) * variation,
-            };
-            sendLocationUpdate(userId, newDemoLocation, userType);
-            return newDemoLocation;
-          });
+          const variation = 0.0005; // Smaller, more realistic movement
+          const newDemoLocation = {
+            lat:
+              (LOCATION_CONFIG.DEMO_LOCATIONS[userType].lat ||
+                initialDemoLocation.lat) +
+              (Math.random() - 0.5) * variation,
+            lng:
+              (LOCATION_CONFIG.DEMO_LOCATIONS[userType].lng ||
+                initialDemoLocation.lng) +
+              (Math.random() - 0.5) * variation,
+          };
+
+          // Update the location in the config for persistence
+          LOCATION_CONFIG.DEMO_LOCATIONS[userType] = newDemoLocation;
+
+          if (onLocationUpdate) {
+            onLocationUpdate(newDemoLocation);
+          }
         }, LOCATION_CONFIG.DEMO_UPDATE_INTERVAL);
       }
     };
@@ -76,9 +89,9 @@ const useRealTimeLocation = (userId, userType, isActive = true) => {
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       if (demoInterval !== null) clearInterval(demoInterval);
     };
-  }, [userId, userType, isActive, sendLocationUpdate]);
+  }, [userId, userType, isActive, onLocationUpdate]);
 
-  return { currentLocation, locationError };
+  return { locationError };
 };
 
 export default useRealTimeLocation;

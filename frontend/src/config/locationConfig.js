@@ -1,10 +1,11 @@
 // Configuration for location tracking
 export let LOCATION_CONFIG = {
   // Set to false for testing with dummy data, true for real GPS location
-  USE_REAL_LOCATION: true,
+  USE_REAL_LOCATION:
+    JSON.parse(localStorage.getItem("USE_REAL_LOCATION")) ?? true,
 
   // Demo locations for testing (you can modify these for different test scenarios)
-  DEMO_LOCATIONS: {
+  DEMO_LOCATIONS: JSON.parse(localStorage.getItem("DEMO_LOCATIONS")) ?? {
     captain: {
       lat: 28.6139,
       lng: 77.209,
@@ -33,6 +34,10 @@ export let LOCATION_CONFIG = {
 // This now directly mutates the config object.
 export const toggleLocationMode = () => {
   LOCATION_CONFIG.USE_REAL_LOCATION = !LOCATION_CONFIG.USE_REAL_LOCATION;
+  localStorage.setItem(
+    "USE_REAL_LOCATION",
+    JSON.stringify(LOCATION_CONFIG.USE_REAL_LOCATION)
+  );
   console.log(
     `Location tracking mode changed to: ${
       LOCATION_CONFIG.USE_REAL_LOCATION ? "REAL" : "DEMO"
@@ -46,6 +51,10 @@ export const toggleLocationMode = () => {
 export const setDemoLocation = (userType, lat, lng) => {
   if (LOCATION_CONFIG.DEMO_LOCATIONS[userType]) {
     LOCATION_CONFIG.DEMO_LOCATIONS[userType] = { lat, lng };
+    localStorage.setItem(
+      "DEMO_LOCATIONS",
+      JSON.stringify(LOCATION_CONFIG.DEMO_LOCATIONS)
+    );
     console.log(`Demo location for ${userType} set to:`, { lat, lng });
   }
 };
