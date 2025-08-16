@@ -6,9 +6,11 @@ import {
 } from "../middlewares/auth.middleware.js";
 import {
   confirmRide,
-  createRideController,
-  getRideOTP, // <-- Import the new controller
+  createRide,
+  getRideOTP,
   getFare,
+  getRideDetails,
+  updateRideDetails,
 } from "../controllers/ride.controller.js";
 
 const router = Router();
@@ -28,7 +30,7 @@ router.post(
     .notEmpty()
     .isString()
     .withMessage("Vehicle type is required"),
-  createRideController
+  createRide
 );
 
 router.get(
@@ -62,6 +64,16 @@ router.post(
     .isMongoId()
     .withMessage("Ride ID is required"),
   confirmRide
+);
+
+//get details
+router.get("/get-ride-details/", authenticateUser, getRideDetails);
+
+router.patch(
+  "/update-ride-details/",
+  authenticateUser,
+  body("rideData").notEmpty().isObject().withMessage("Ride data is required"),
+  updateRideDetails
 );
 
 export default router;

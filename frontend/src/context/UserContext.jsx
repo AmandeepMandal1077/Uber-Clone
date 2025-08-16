@@ -6,6 +6,8 @@ export const UserContext = React.createContext();
 function UserContextProvider({ children }) {
   const [user, setUser] = useState(null); // Start with null instead of empty object
   const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState("search");
+  const [userDashboardData, setUserDashboardData] = useState(null);
 
   // Wrapper function to add logging
   const setUserWithLogging = (userData) => {
@@ -23,7 +25,16 @@ function UserContextProvider({ children }) {
 
   return (
     <UserContext.Provider
-      value={{ user, setUser: setUserWithLogging, loading, setLoading }}
+      value={{
+        user,
+        setUser: setUserWithLogging,
+        loading,
+        setLoading,
+        currentView,
+        setCurrentView,
+        userDashboardData,
+        setUserDashboardData,
+      }}
     >
       {children}
     </UserContext.Provider>
