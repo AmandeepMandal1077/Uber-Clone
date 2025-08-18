@@ -34,7 +34,7 @@ function CaptainContextProvider({ children }) {
   // Fetch captain data from the server using the token
   useEffect(() => {
     const fetchCaptainData = async () => {
-      const token = localStorage.getItem("captain-token");
+      const token = localStorage.getItem("token");
 
       if (token) {
         try {

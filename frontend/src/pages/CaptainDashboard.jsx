@@ -132,10 +132,20 @@ function CaptainDashboard() {
   }, [captainLocation, fullRoute, captain?._id, sendMessage, currentRide]);
 
   const toggleOnlineStatus = () => {
-    setIsOnline((prev) => {
-      if (prev) resetToHome();
-      return !prev;
-    });
+    const newOnlineStatus = !isOnline;
+    setIsOnline(newOnlineStatus);
+
+    if (newOnlineStatus) {
+      // If going online, immediately send the current location
+      sendMessage("update-location", {
+        userId: captain._id,
+        location: captainLocation, // This holds the initial demo location
+        userType: "captain",
+      });
+    } else {
+      // If going offline, you can add logic here if needed
+      resetToHome();
+    }
   };
 
   const handleAcceptRide = async (request) => {
