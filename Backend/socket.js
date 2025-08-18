@@ -26,6 +26,13 @@ const initializeSocket = (server) => {
 
     socket.on("update-location", async ({ userId, location, userType }) => {
       if (userType === "captain") {
+        await CAPTAIN.findByIdAndUpdate(userId, {
+          location: {
+            type: "Point",
+            coordinates: [location.lng, location.lat],
+          },
+        });
+
         const activeRide = await RIDE.findOne({
           captain: userId,
           status: { $in: ["confirmed", "ongoing"] },
@@ -52,26 +59,10 @@ const initializeSocket = (server) => {
       const userInfo = userSocketMap[socket.id];
       if (userInfo) {
         const { userId, userType } = userInfo;
-        const location =
-          userType === "user"
-            ? (await USER.findById(userId))?.location
-            : (await CAPTAIN.findById(userId))?.location;
-
-        if (location) {
-          if (userType === "user") {
-            await USER.findByIdAndUpdate(userId, {
-              location: {
-                latitude: location.lat,
-                longitude: location.lng,
-              },
-            });
-          } else if (userType === "captain") {
-            await CAPTAIN.findByIdAndUpdate(userId, {
-              location: {
-                latitude: location.lat,
-                longitude: location.lng,
-              },
-            });
+        if (userType === "captain") {
+          const captain = await CAPTAIN.findById(userId);
+          if (captain && captain.location) {
+            // No change needed here, assuming location is already in the correct format in the DB
           }
         }
         delete userSocketMap[socket.id];

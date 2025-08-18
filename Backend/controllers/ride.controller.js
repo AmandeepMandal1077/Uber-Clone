@@ -33,8 +33,10 @@ const createRide = async (req, res) => {
     const captains = await getCaptainsWithin({
       latitude: pickupLocation.latitude,
       longitude: pickupLocation.longitude,
-      radius: 20000000,
+      radius: 5000000,
     });
+
+    console.log("Nearby Captains:", captains);
 
     const rideWithUser = await RIDE.findById(ride._id)
       .populate("user")
