@@ -25,6 +25,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/maps", limiter);
 
+import stripeRouter from "./routes/stripe.route.js";
 import userRouter from "./routes/user.route.js";
 import captainRouter from "./routes/captain.route.js";
 import mapRouter from "./routes/map.route.js";
@@ -38,5 +39,6 @@ app.use("/users", userRouter);
 app.use("/captains", captainRouter);
 app.use("/maps", mapRouter);
 app.use("/rides", rideRouter);
+app.use("/stripe", stripeRouter);
 
 export default app;
