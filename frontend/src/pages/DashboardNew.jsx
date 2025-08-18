@@ -303,17 +303,82 @@ const Dashboard = () => {
     }
   };
 
+  const payingViaStripe = async () => {
+    try {
+      const itemData = {
+        name: "Ride Payment",
+        description: `Payment for ride from ${routeData.from} to ${routeData.to}`,
+        price: 100 * Number(selectedRide.price.replace("₹", "").trim()),
+        currency: "inr",
+      };
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/stripe/create-checkout-session`,
+        {
+          item: itemData,
+        },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      const session = response.data;
+      if (session.url) {
+        window.location.href = session.url;
+      }
+    } catch (error) {
+      console.error("Error during payment:", error);
+    }
+  };
+
   const handleConfirmPayment = async () => {
     setIsLoading(true);
     try {
+      const p = selectedRide.price.replace("₹", "").trim();
+      console.log("price: ", p);
+      let paymentStatus = "pending";
       //integrate stripe here:-
+      await payingViaStripe();
 
-      const rideData = { status: "confirmed" };
-      const response = await axios.patch(
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get("session_id");
+
+      if (sessionId) {
+        paymentStatus = "completed";
+        console.log("Payment Status:", paymentStatus);
+        const rideData = { status: "confirmed" };
+        const response = await axios.patch(
+          `${import.meta.env.VITE_BASE_URL}/rides/update-ride-details`,
+          {
+            rideData,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        if (!response || !response.data) {
+          throw new Error("Error while paying for ride");
+        }
+        //check for payment confirmation
+        setView("searching-driver");
+      } else {
+        paymentStatus = "not_completed";
+        console.log("Payment Status:", paymentStatus);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelRide = async () => {
+    try {
+      const rideData = { status: "cancelled" };
+      await axios.patch(
         `${import.meta.env.VITE_BASE_URL}/rides/update-ride-details`,
-        {
-          rideData,
-        },
+        { rideData },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -321,15 +386,9 @@ const Dashboard = () => {
         }
       );
 
-      if (!response || !response.data) {
-        throw new Error("Error while paying for ride");
-      }
-      //check for payment confirmation
-      setView("searching-driver");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+      resetToHome();
+    } catch (error) {
+      console.error("Error cancelling ride:", error);
     }
   };
 
@@ -389,6 +448,18 @@ const Dashboard = () => {
           pickupCoords={pickupCoords}
           destinationCoords={destinationCoords}
         />
+      </div>
+      <div>
+        {(view === "searching-driver" ||
+          view === "otp-display" ||
+          view === "payment") && (
+          <button
+            onClick={handleCancelRide}
+            className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg z-20"
+          >
+            Cancel Ride
+          </button>
+        )}
       </div>
       <div className="absolute top-0 left-0 h-auto w-full md:h-full md:w-1/3 p-4 z-10">
         <div className="bg-white rounded-lg shadow-2xl overflow-hidden min-h-[300px]">
