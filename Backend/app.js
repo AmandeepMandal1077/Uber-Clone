@@ -21,6 +21,14 @@ connectDB();
 const app = express();
 app.use(cors());
 app.use(cookieParser());
+
+import { stripeWebhookHandler } from "./controllers/stripe.controller.js";
+app.post(
+  "/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhookHandler
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/maps", limiter);
