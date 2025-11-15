@@ -315,6 +315,7 @@ const Dashboard = () => {
         `${import.meta.env.VITE_BASE_URL}/stripe/create-checkout-session`,
         {
           item: itemData,
+          rideId: activeRide ? activeRide._id : null,
         },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
